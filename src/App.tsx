@@ -15,6 +15,8 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CommunicationPage from "./pages/CommunicationPage";
 import AdminPage from "./pages/AdminPage";
+import FinancePage from "./pages/FinancePage";
+import DocumentsPage from "./pages/DocumentsPage";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin', 'director']}>
                   <AdminPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finance" 
+              element={
+                <ProtectedRoute>
+                  <FinancePage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/documents" 
+              element={
+                <ProtectedRoute>
+                  <DocumentsPage />
                 </ProtectedRoute>
               } 
             />

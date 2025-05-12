@@ -2,7 +2,8 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
+import { Home, Users, MessageSquare, FileText, BarChart } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,10 +41,103 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </Button>
           </div>
         </div>
+        
+        {/* Navigation */}
+        <nav className="container mx-auto px-4 py-2 overflow-x-auto">
+          <div className="flex space-x-1 min-w-max">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                  isActive
+                    ? 'bg-association-primary text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`
+              }
+            >
+              <Home className="mr-2 h-4 w-4" />
+              <span>Início</span>
+            </NavLink>
+            
+            {(user?.role === 'admin' || user?.role === 'director') && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                    isActive
+                      ? 'bg-association-primary text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`
+                }
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Administração</span>
+              </NavLink>
+            )}
+            
+            {user?.role === 'admin' && (
+              <NavLink
+                to="/residents"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                    isActive
+                      ? 'bg-association-primary text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`
+                }
+              >
+                <Users className="mr-2 h-4 w-4" />
+                <span>Moradores</span>
+              </NavLink>
+            )}
+            
+            <NavLink
+              to="/communication"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                  isActive
+                    ? 'bg-association-primary text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`
+              }
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              <span>Comunicação</span>
+            </NavLink>
+            
+            <NavLink
+              to="/finance"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                  isActive
+                    ? 'bg-association-primary text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`
+              }
+            >
+              <BarChart className="mr-2 h-4 w-4" />
+              <span>Finanças</span>
+            </NavLink>
+            
+            <NavLink
+              to="/documents"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                  isActive
+                    ? 'bg-association-primary text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`
+              }
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              <span>Documentos</span>
+            </NavLink>
+          </div>
+        </nav>
       </header>
       
       {/* Main Content */}
-      <div className="flex-grow container mx-auto px-4 py-8">
+      <div className="flex-grow">
         {children}
       </div>
       
