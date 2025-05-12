@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { customSupabaseClient } from '@/integrations/supabase/customClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,7 +60,7 @@ const MonthlyFeesSection: React.FC = () => {
   const { data: monthlyFees, isLoading } = useQuery({
     queryKey: ['monthlyFees', selectedMonth, selectedStatus],
     queryFn: async () => {
-      let query = supabase.from('monthly_fees').select(`
+      let query = customSupabaseClient.from('monthly_fees').select(`
         *,
         users:user_id (
           name,
@@ -94,7 +93,7 @@ const MonthlyFeesSection: React.FC = () => {
   const { data: feeConfig } = useQuery({
     queryKey: ['feeConfig'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await customSupabaseClient
         .from('fee_configuration')
         .select('*')
         .is('end_date', null)
@@ -110,7 +109,7 @@ const MonthlyFeesSection: React.FC = () => {
   const { data: residents } = useQuery({
     queryKey: ['residents'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await customSupabaseClient
         .from('users')
         .select('id, name, email')
         .order('name', { ascending: true });
@@ -128,7 +127,7 @@ const MonthlyFeesSection: React.FC = () => {
       amount: number;
       due_date: Date;
     }) => {
-      const { data, error } = await supabase.from('monthly_fees').insert([
+      const { data, error } = await customSupabaseClient.from('monthly_fees').insert([
         {
           user_id: feeData.user_id,
           reference_month: format(startOfMonth(feeData.reference_month), 'yyyy-MM-dd'),
@@ -161,7 +160,7 @@ const MonthlyFeesSection: React.FC = () => {
         due_date: format(data.dueDate, 'yyyy-MM-dd')
       }));
       
-      const { data: responseData, error } = await supabase
+      const { data: responseData, error } = await customSupabaseClient
         .from('monthly_fees')
         .insert(feesToCreate);
       
@@ -182,7 +181,7 @@ const MonthlyFeesSection: React.FC = () => {
   // Mark fees as paid mutation
   const markFeesAsPaidMutation = useMutation({
     mutationFn: async (data: { feeIds: string[]; paymentDate: Date }) => {
-      const { data: responseData, error } = await supabase
+      const { data: responseData, error } = await customSupabaseClient
         .from('monthly_fees')
         .update({
           status: 'paid',

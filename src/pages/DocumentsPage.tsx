@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { customSupabaseClient } from '@/integrations/supabase/customClient';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DocumentCategorySection from '@/components/documents/DocumentCategorySection';
 import DocumentUploadDialog from '@/components/documents/DocumentUploadDialog';
@@ -44,7 +44,7 @@ const DocumentsPage: React.FC = () => {
   const { data: documents, isLoading } = useQuery({
     queryKey: ['documents'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await customSupabaseClient
         .from('documents')
         .select('*')
         .order('created_at', { ascending: false });

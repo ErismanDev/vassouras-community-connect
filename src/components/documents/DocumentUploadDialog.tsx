@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { customSupabaseClient } from '@/integrations/supabase/customClient';
 import {
   Dialog,
   DialogContent,
@@ -54,28 +54,26 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ open, onOpe
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.${fileExt}`;
       
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('association_documents_files')
-        .upload(fileName, file);
+      const { error: uploadError, data: uploadData } = await customSupabaseClient.from('storage')
+        .upload('association_documents_files', fileName, file);
       
       if (uploadError) throw uploadError;
       
       // 2. Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('association_documents_files')
-        .getPublicUrl(fileName);
+      const publicUrl = `https://kbxqldzhawciprjiwtfk.supabase.co/storage/v1/object/public/association_documents_files/${fileName}`;
       
       // 3. Create document record
-      const { error: docError } = await supabase.from('documents').insert([
-        {
-          title,
-          category,
-          visibility,
-          file_url: publicUrl,
-          file_type: fileExt,
-          description: `${category} - ${title}`
-        }
-      ]);
+      const { error: docError } = await customSupabaseClient.from('documents')
+        .insert([
+          {
+            title,
+            category,
+            visibility,
+            file_url: publicUrl,
+            file_type: fileExt,
+            description: `${category} - ${title}`
+          }
+        ]);
       
       if (docError) throw docError;
       

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { customSupabaseClient } from '@/integrations/supabase/customClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,7 @@ const FeeConfigurationSection: React.FC = () => {
   const { data: feeConfigs, isLoading } = useQuery({
     queryKey: ['feeConfigs'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await customSupabaseClient
         .from('fee_configuration')
         .select('*')
         .order('start_date', { ascending: false });
@@ -49,21 +49,21 @@ const FeeConfigurationSection: React.FC = () => {
   const createFeeConfigMutation = useMutation({
     mutationFn: async (feeConfig: typeof newFeeConfig) => {
       // If there's an active fee config, update its end_date
-      const { data: activeConfig } = await supabase
+      const { data: activeConfig } = await customSupabaseClient
         .from('fee_configuration')
         .select('id')
         .is('end_date', null)
         .limit(1);
       
       if (activeConfig && activeConfig.length > 0) {
-        await supabase
+        await customSupabaseClient
           .from('fee_configuration')
           .update({ end_date: format(new Date(feeConfig.start_date), 'yyyy-MM-dd') })
           .eq('id', activeConfig[0].id);
       }
       
       // Create new fee configuration
-      const { data, error } = await supabase
+      const { data, error } = await customSupabaseClient
         .from('fee_configuration')
         .insert([
           {

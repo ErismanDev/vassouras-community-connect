@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Download, File, FilePdf, FileText, FileSpreadsheet } from 'lucide-react';
+import { Download, File, FileText, FileSpreadsheet } from 'lucide-react';
 
 interface DocumentProps {
   id: string;
@@ -29,7 +29,7 @@ const DocumentCategorySection: React.FC<DocumentCategorySectionProps> = ({
   const getDocumentIcon = (fileType: string) => {
     switch (fileType.toLowerCase()) {
       case 'pdf':
-        return <FilePdf className="h-10 w-10 text-red-500" />;
+        return <File className="h-10 w-10 text-red-500" />; // Changed from FilePdf to File
       case 'doc':
       case 'docx':
         return <FileText className="h-10 w-10 text-blue-500" />;
