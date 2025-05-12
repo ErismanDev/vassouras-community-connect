@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { customSupabaseClient } from '@/integrations/supabase/customClient';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -57,7 +56,7 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ isAdmin }) =>
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactions', filters],
     queryFn: async () => {
-      let query = supabase.from('financial_transactions').select('*');
+      let query = customSupabaseClient.from('financial_transactions').select('*');
       
       if (filters.startDate) {
         query = query.gte('transaction_date', format(filters.startDate, 'yyyy-MM-dd'));
@@ -86,21 +85,21 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ isAdmin }) =>
       let receiptUrl = null;
       if (transaction.receiptFile) {
         const fileName = `${Date.now()}-${transaction.receiptFile.name}`;
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError, data } = await customSupabaseClient.storage
           .from('financial_receipts')
           .upload(fileName, transaction.receiptFile);
         
         if (uploadError) throw uploadError;
         
-        const { data: { publicUrl } } = supabase.storage
+        const publicUrl = customSupabaseClient.storage
           .from('financial_receipts')
-          .getPublicUrl(fileName);
+          .getPublicUrl(fileName).data.publicUrl;
           
         receiptUrl = publicUrl;
       }
       
       // Create transaction record
-      const { data, error } = await supabase.from('financial_transactions').insert([
+      const { data, error } = await customSupabaseClient.from('financial_transactions').insert([
         {
           description: transaction.description,
           amount: parseFloat(transaction.amount),

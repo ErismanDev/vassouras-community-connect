@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { customSupabaseClient } from '@/integrations/supabase/customClient';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -34,7 +33,7 @@ const FinancialReportsSection: React.FC<FinancialReportsSectionProps> = ({ isAdm
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactionsReport', startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await customSupabaseClient
         .from('financial_transactions')
         .select('*')
         .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))

@@ -1,10 +1,13 @@
 
 import { supabase } from './client';
+import { createClient } from '@supabase/supabase-js';
 
-// This wrapper allows us to use tables that aren't yet defined in the types.ts file
-// without modifying the read-only types.ts file
-export const customSupabaseClient = {
-  from: (table: string) => {
-    return supabase.from(table as any);
-  }
-};
+// Supabase project credentials - same as in client.ts
+const SUPABASE_URL = "https://kbxqldzhawciprjiwtfk.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtieHFsZHpoYXdjaXByaml3dGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNjA0NjcsImV4cCI6MjA2MjYzNjQ2N30.z21Q1nmAwpAZ9OzChZ53ahazLZv5a3AORE7yj5q1ljk";
+
+// Create a custom client without type restrictions
+export const customSupabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// For consistency in our code, preserve the original client
+export { supabase };

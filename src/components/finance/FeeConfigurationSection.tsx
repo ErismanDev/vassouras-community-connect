@@ -53,13 +53,13 @@ const FeeConfigurationSection: React.FC = () => {
         .from('fee_configuration')
         .select('id')
         .is('end_date', null)
-        .limit(1);
+        .single();
       
-      if (activeConfig && activeConfig.length > 0) {
+      if (activeConfig) {
         await customSupabaseClient
           .from('fee_configuration')
           .update({ end_date: format(new Date(feeConfig.start_date), 'yyyy-MM-dd') })
-          .eq('id', activeConfig[0].id);
+          .eq('id', activeConfig.id);
       }
       
       // Create new fee configuration

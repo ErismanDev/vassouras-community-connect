@@ -54,16 +54,20 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ open, onOpe
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.${fileExt}`;
       
-      const { error: uploadError, data: uploadData } = await customSupabaseClient.from('storage')
-        .upload('association_documents_files', fileName, file);
+      const { error: uploadError, data: uploadData } = await customSupabaseClient.storage
+        .from('association_documents_files')
+        .upload(fileName, file);
       
       if (uploadError) throw uploadError;
       
       // 2. Get public URL
-      const publicUrl = `https://kbxqldzhawciprjiwtfk.supabase.co/storage/v1/object/public/association_documents_files/${fileName}`;
+      const publicUrl = customSupabaseClient.storage
+        .from('association_documents_files')
+        .getPublicUrl(fileName).data.publicUrl;
       
       // 3. Create document record
-      const { error: docError } = await customSupabaseClient.from('documents')
+      const { error: docError } = await customSupabaseClient
+        .from('documents')
         .insert([
           {
             title,
