@@ -1,189 +1,187 @@
 
 import React, { useState } from 'react';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { customSupabaseClient } from '@/integrations/supabase/customClient';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { customSupabaseClient } from '@/integrations/supabase/customClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface DocumentUploadDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-const DOCUMENT_CATEGORIES = [
-  'estatuto',
-  'atas',
-  'regulamentos',
-  'financeiro',
-  'projetos',
-  'comunicados',
-  'juridico',
-  'diversos'
-];
-
-const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ open, onOpenChange }) => {
+const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ onSuccess }) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('atas');
+  const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<'all' | 'board' | 'admin'>('all');
   const [file, setFile] = useState<File | null>(null);
-  
-  const uploadDocumentMutation = useMutation({
+
+  const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!file) {
-        throw new Error('Nenhum arquivo selecionado');
-      }
+      if (!file || !user) throw new Error('File and user are required');
       
-      // 1. Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${title.replace(/\s+/g, '-').toLowerCase()}.${fileExt}`;
-      
-      const { error: uploadError, data: uploadData } = await customSupabaseClient.storage
-        .from('association_documents_files')
+      // Upload file to storage
+      const fileName = `${Date.now()}-${file.name}`;
+      const { error: uploadError } = await customSupabaseClient.storage
+        .from('documents')
         .upload(fileName, file);
       
       if (uploadError) throw uploadError;
       
-      // 2. Get public URL
-      const publicUrl = customSupabaseClient.storage
-        .from('association_documents_files')
+      // Get public URL
+      const fileUrl = customSupabaseClient.storage
+        .from('documents')
         .getPublicUrl(fileName).data.publicUrl;
       
-      // 3. Create document record
-      const { error: docError } = await customSupabaseClient
+      // Save document metadata in the database
+      const { error: dbError } = await customSupabaseClient
         .from('documents')
         .insert([
           {
             title,
             category,
             visibility,
-            file_url: publicUrl,
-            file_type: fileExt,
-            description: `${category} - ${title}`
+            file_url: fileUrl,
+            file_type: file.type,
+            description
           }
         ]);
       
-      if (docError) throw docError;
-      
-      return { success: true };
+      if (dbError) throw dbError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      onOpenChange(false);
-      resetForm();
+      setTitle('');
+      setCategory('atas');
+      setDescription('');
+      setVisibility('all');
+      setFile(null);
+      setOpen(false);
       toast.success('Documento enviado com sucesso!');
+      if (onSuccess) onSuccess();
     },
     onError: (error) => {
       console.error('Error uploading document:', error);
-      toast.error('Erro ao enviar documento. Tente novamente.');
+      toast.error('Erro ao enviar documento. Por favor, tente novamente.');
     }
   });
-  
-  const resetForm = () => {
-    setTitle('');
-    setCategory('');
-    setVisibility('all');
-    setFile(null);
-  };
-  
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    uploadDocumentMutation.mutate();
+    if (!file) {
+      toast.error('Por favor, selecione um arquivo para enviar.');
+      return;
+    }
+    uploadMutation.mutate();
   };
-  
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Enviar Novo Documento</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>Enviar Novo Documento</DialogTitle>
+          <DialogTitle>Enviar Documento</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Título do Documento</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Título</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Ata da Assembleia de Março/2024"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoria</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="atas">Atas de Assembleia</SelectItem>
+                    <SelectItem value="regimentos">Regimentos e Estatutos</SelectItem>
+                    <SelectItem value="financeiros">Relatórios Financeiros</SelectItem>
+                    <SelectItem value="projetos">Projetos e Obras</SelectItem>
+                    <SelectItem value="outros">Outros Documentos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="visibility">Visibilidade</Label>
+                <Select 
+                  value={visibility} 
+                  onValueChange={(val) => setVisibility(val as 'all' | 'board' | 'admin')}
+                >
+                  <SelectTrigger id="visibility">
+                    <SelectValue placeholder="Quem pode acessar?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os moradores</SelectItem>
+                    <SelectItem value="board">Apenas diretoria</SelectItem>
+                    <SelectItem value="admin">Apenas administradores</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Adicione uma breve descrição do documento"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file">Arquivo</Label>
+              <Input
+                id="file"
+                type="file"
+                onChange={handleFileChange}
+                required
+              />
+            </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Select value={category} onValueChange={setCategory} required>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    <span className="capitalize">{cat}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="visibility">Visibilidade</Label>
-            <Select value={visibility} onValueChange={(value: 'all' | 'board' | 'admin') => setVisibility(value)} required>
-              <SelectTrigger id="visibility">
-                <SelectValue placeholder="Selecione a visibilidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os moradores</SelectItem>
-                <SelectItem value="board">Apenas diretoria</SelectItem>
-                <SelectItem value="admin">Apenas administradores</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="document-file">Arquivo</Label>
-            <Input
-              id="document-file"
-              type="file"
-              onChange={handleFileChange}
-              required
-            />
-          </div>
-          
-          <DialogFooter className="pt-4">
+
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={uploadDocumentMutation.isPending}
+              onClick={() => setOpen(false)}
+              disabled={uploadMutation.isPending}
             >
               Cancelar
             </Button>
-            <Button
+            <Button 
               type="submit"
-              disabled={uploadDocumentMutation.isPending || !title || !category || !file}
+              disabled={!file || !title || uploadMutation.isPending}
             >
-              {uploadDocumentMutation.isPending ? 'Enviando...' : 'Enviar Documento'}
+              {uploadMutation.isPending ? 'Enviando...' : 'Enviar'}
             </Button>
           </DialogFooter>
         </form>
