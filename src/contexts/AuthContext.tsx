@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 export type UserRole = 'admin' | 'director' | 'resident';
 
@@ -19,6 +21,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  session: Session | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,61 +36,72 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check for existing session on mount
+  // Check for existing session and set up listener
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user:', error);
-        localStorage.removeItem('user');
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        setSession(currentSession);
+        if (currentSession?.user) {
+          const { id, email, user_metadata } = currentSession.user;
+          const userData: User = {
+            id,
+            name: user_metadata?.name || email?.split('@')[0] || 'Usuário',
+            email: email || '',
+            role: user_metadata?.role || 'resident',
+          };
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    );
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      if (currentSession?.user) {
+        const { id, email, user_metadata } = currentSession.user;
+        const userData: User = {
+          id,
+          name: user_metadata?.name || email?.split('@')[0] || 'Usuário',
+          email: email || '',
+          role: user_metadata?.role || 'resident',
+        };
+        setUser(userData);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Mock authentication functions (to be replaced with real API calls)
   const login = async (email: string, password: string) => {
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      // Mock validation
-      if (!email || !password) {
-        throw new Error('Todos os campos são obrigatórios');
+      if (error) {
+        throw error;
       }
       
-      // In a real app, this would be verified against a backend
-      // Mock users for development
-      const users: Record<string, User> = {
-        'admin@example.com': { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'admin' },
-        'director@example.com': { id: '2', name: 'Director User', email: 'director@example.com', role: 'director' },
-        'resident@example.com': { id: '3', name: 'Resident User', email: 'resident@example.com', role: 'resident' }
-      };
-      
-      const mockUser = users[email];
-      if (!mockUser || password !== 'password123') {
-        throw new Error('E-mail ou senha inválidos');
+      if (data?.session) {
+        toast.success('Login realizado com sucesso!');
+        navigate('/dashboard');
       }
-      
-      // Set user in state and localStorage
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      
-      toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Falha ao fazer login');
-      }
+    } catch (error: any) {
+      toast.error(error.message || 'Falha ao fazer login');
       throw error;
     } finally {
       setLoading(false);
@@ -98,45 +112,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock validation
-      if (!name || !email || !password) {
-        throw new Error('Todos os campos são obrigatórios');
-      }
-      
-      // In a real app, this would create a user in the backend
-      const newUser: User = {
-        id: Math.random().toString(36).substring(2, 9),
-        name,
+      const { data, error } = await supabase.auth.signUp({
         email,
-        role,
-      };
+        password,
+        options: {
+          data: {
+            name,
+            role,
+          },
+        }
+      });
       
-      // Set user in state and localStorage
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      
-      toast.success('Registro realizado com sucesso!');
-      navigate('/dashboard');
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Falha ao registrar');
+      if (error) {
+        throw error;
       }
+      
+      if (data) {
+        toast.success('Registro realizado com sucesso!');
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Falha ao registrar');
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    toast.info('Logout realizado');
-    navigate('/login');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      toast.info('Logout realizado');
+      navigate('/login');
+    } catch (error: any) {
+      toast.error(error.message || 'Falha ao sair');
+    }
   };
 
   const value = {
@@ -146,6 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     logout,
     loading,
+    session,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -9,7 +9,186 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      assembly_decisions: {
+        Row: {
+          approved: boolean
+          assembly_date: string
+          created_at: string
+          created_by: string
+          decision_text: string
+          id: string
+          title: string
+          updated_at: string
+          votes_abstain: number
+          votes_against: number
+          votes_for: number
+        }
+        Insert: {
+          approved?: boolean
+          assembly_date: string
+          created_at?: string
+          created_by: string
+          decision_text: string
+          id?: string
+          title: string
+          updated_at?: string
+          votes_abstain?: number
+          votes_against?: number
+          votes_for?: number
+        }
+        Update: {
+          approved?: boolean
+          assembly_date?: string
+          created_at?: string
+          created_by?: string
+          decision_text?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          votes_abstain?: number
+          votes_against?: number
+          votes_for?: number
+        }
+        Relationships: []
+      }
+      board_members: {
+        Row: {
+          bio: string | null
+          created_at: string
+          id: string
+          photo_url: string | null
+          position: string
+          term_end: string | null
+          term_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          position: string
+          term_end?: string | null
+          term_start: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          position?: string
+          term_end?: string | null
+          term_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meeting_minutes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          document_url: string | null
+          id: string
+          meeting_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          document_url?: string | null
+          id?: string
+          meeting_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          document_url?: string | null
+          id?: string
+          meeting_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          author_id: string
+          category: string
+          content: string
+          created_at: string
+          id: string
+          target_role: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          target_role?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          target_role?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

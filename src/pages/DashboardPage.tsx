@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/dashboard/DashboardLayout';
+import { MessageSquare, ClipboardList, Users, Calendar } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -26,11 +27,12 @@ const DashboardPage: React.FC = () => {
         </CardContent>
       </Card>
       
-      <Card className="cursor-pointer hover:shadow-md transition-shadow">
+      <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate('/admin')}>
         <CardHeader>
-          <CardTitle>Usuários do Sistema</CardTitle>
+          <CardTitle>Gestão Administrativa</CardTitle>
           <CardDescription>
-            Gerencie os usuários e permissões do sistema
+            Gerencie a diretoria, projetos, atas e assembleias
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -42,11 +44,12 @@ const DashboardPage: React.FC = () => {
   
   const renderDirectorCards = () => (
     <>
-      <Card className="cursor-pointer hover:shadow-md transition-shadow">
+      <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate('/admin')}>
         <CardHeader>
-          <CardTitle>Moradores</CardTitle>
+          <CardTitle>Gestão Administrativa</CardTitle>
           <CardDescription>
-            Visualize os dados dos moradores da associação
+            Gerencie projetos, atas e assembleias
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,9 +87,9 @@ const DashboardPage: React.FC = () => {
       
       <Card className="cursor-pointer hover:shadow-md transition-shadow">
         <CardHeader>
-          <CardTitle>Comunicados</CardTitle>
+          <CardTitle>Documentos</CardTitle>
           <CardDescription>
-            Veja os últimos comunicados da associação
+            Acesse documentos importantes da associação
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,9 +115,28 @@ const DashboardPage: React.FC = () => {
         {user?.role === 'resident' && renderResidentCards()}
         
         {/* Common cards for all users */}
+        <Card className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/communication')}>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              <CardTitle>Comunicação</CardTitle>
+            </div>
+            <CardDescription>
+              Acesse os comunicados da associação
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button>Acessar</Button>
+          </CardContent>
+        </Card>
+
         <Card className="cursor-pointer hover:shadow-md transition-shadow">
           <CardHeader>
-            <CardTitle>Eventos</CardTitle>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              <CardTitle>Eventos</CardTitle>
+            </div>
             <CardDescription>
               Veja os próximos eventos da associação
             </CardDescription>

@@ -13,6 +13,8 @@ import ResidentsPage from "./pages/ResidentsPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import CommunicationPage from "./pages/CommunicationPage";
+import AdminPage from "./pages/AdminPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <ResidentsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/communication" 
+              element={
+                <ProtectedRoute>
+                  <CommunicationPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'director']}>
+                  <AdminPage />
                 </ProtectedRoute>
               } 
             />
