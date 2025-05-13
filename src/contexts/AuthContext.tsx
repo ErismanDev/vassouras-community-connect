@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -41,9 +42,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for existing session and set up listener
   useEffect(() => {
-    // Set up auth state listener first
+    // First check for existing session (non-blocking)
+    const initializeAuth = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (sessionData?.session) {
+          setSession(sessionData.session);
+          const { id, email, user_metadata } = sessionData.session.user;
+          const userData: User = {
+            id,
+            name: user_metadata?.name || email?.split('@')[0] || 'Usuário',
+            email: email || '',
+            role: user_metadata?.role || 'resident',
+          };
+          setUser(userData);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setLoading(false);
+      }
+    };
+    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log('Auth state changed:', event);
+        
         setSession(currentSession);
         if (currentSession?.user) {
           const { id, email, user_metadata } = currentSession.user;
@@ -57,28 +84,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setUser(null);
         }
-        setLoading(false);
       }
     );
 
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      if (currentSession?.user) {
-        const { id, email, user_metadata } = currentSession.user;
-        const userData: User = {
-          id,
-          name: user_metadata?.name || email?.split('@')[0] || 'Usuário',
-          email: email || '',
-          role: user_metadata?.role || 'resident',
-        };
-        setUser(userData);
-      }
-      setLoading(false);
-    });
+    // Initialize auth
+    initializeAuth();
 
+    // Clean up on unmount
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 

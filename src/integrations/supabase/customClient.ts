@@ -1,12 +1,23 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { supabase } from './client';
 
-// Supabase project credentials
-const SUPABASE_URL = "https://kbxqldzhawciprjiwtfk.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtieHFsZHpoYXdjaXByaml3dGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNjA0NjcsImV4cCI6MjA2MjYzNjQ2N30.z21Q1nmAwpAZ9OzChZ53ahazLZv5a3AORE7yj5q1ljk";
+// Export the already initialized supabase client to ensure singleton pattern
+export { supabase };
 
-// Create a custom client without type restrictions
-export const customSupabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-// Export the original Supabase client from client.ts for consistency in our code
-export { supabase } from './client';
+// If you need to create a custom client with additional options in the future,
+// create a function that returns a new client instead of initializing it directly
+export const createCustomClient = (customOptions = {}) => {
+  const supabaseUrl = 'https://kbxqldzhawciprjiwtfk.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtieHFsZHpoYXdjaXByaml3dGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTYzMTY2NTIsImV4cCI6MjAzMTg5MjY1Mn0.2Q0bO23N1z7SJRZkj6QX5e3YUy8V1z8XywQkcOIok8Q';
+  
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: localStorage
+    },
+    ...customOptions
+  });
+};
