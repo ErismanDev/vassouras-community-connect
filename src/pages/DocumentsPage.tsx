@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { customSupabaseClient } from '@/integrations/supabase/customClient';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DocumentCategorySection from '@/components/documents/DocumentCategorySection';
 import DocumentUploadDialog from '@/components/documents/DocumentUploadDialog';
 import { Button } from '@/components/ui/button';
@@ -97,99 +96,97 @@ const DocumentsPage: React.FC = () => {
   };
   
   return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold">Gestão Documental</h1>
-          {isAdminOrBoard && (
-            <Button onClick={() => setIsUploadDialogOpen(true)}>
-              Enviar Documento
-            </Button>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
-          <div className="lg:col-span-1">
-            <div className="sticky top-4 space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-2">Buscar</h3>
-                <Input
-                  placeholder="Pesquisar documentos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-medium mb-2">Categorias</h3>
-                <div className="space-y-2">
-                  {DOCUMENT_CATEGORIES.map((category) => (
-                    <div
-                      key={category}
-                      className={`flex justify-between items-center p-2 rounded-md cursor-pointer ${
-                        selectedCategory === category
-                          ? 'bg-primary/10 border-l-4 border-primary'
-                          : 'hover:bg-muted'
-                      }`}
-                      onClick={() => handleCategoryClick(category)}
-                    >
-                      <span className="capitalize">{category}</span>
-                      <Badge variant="outline">{getCategoryCount(category)}</Badge>
-                    </div>
-                  ))}
-                </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold">Gestão Documental</h1>
+        {isAdminOrBoard && (
+          <Button onClick={() => setIsUploadDialogOpen(true)}>
+            Enviar Documento
+          </Button>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
+        <div className="lg:col-span-1">
+          <div className="sticky top-4 space-y-6">
+            <div>
+              <h3 className="text-lg font-medium mb-2">Buscar</h3>
+              <Input
+                placeholder="Pesquisar documentos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-medium mb-2">Categorias</h3>
+              <div className="space-y-2">
+                {DOCUMENT_CATEGORIES.map((category) => (
+                  <div
+                    key={category}
+                    className={`flex justify-between items-center p-2 rounded-md cursor-pointer ${
+                      selectedCategory === category
+                        ? 'bg-primary/10 border-l-4 border-primary'
+                        : 'hover:bg-muted'
+                    }`}
+                    onClick={() => handleCategoryClick(category)}
+                  >
+                    <span className="capitalize">{category}</span>
+                    <Badge variant="outline">{getCategoryCount(category)}</Badge>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-          
-          <div className="lg:col-span-3">
-            {isLoading ? (
-              <div className="text-center py-12">
-                <p className="text-lg text-muted-foreground">Carregando documentos...</p>
-              </div>
-            ) : filteredDocuments.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-lg text-muted-foreground">
-                  Nenhum documento encontrado.
-                  {searchQuery && ' Tente uma pesquisa diferente.'}
-                  {selectedCategory && ' Tente selecionar outra categoria.'}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {selectedCategory ? (
-                  documentsByCategory[selectedCategory]?.length > 0 && (
+        </div>
+        
+        <div className="lg:col-span-3">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-lg text-muted-foreground">Carregando documentos...</p>
+            </div>
+          ) : filteredDocuments.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-lg text-muted-foreground">
+                Nenhum documento encontrado.
+                {searchQuery && ' Tente uma pesquisa diferente.'}
+                {selectedCategory && ' Tente selecionar outra categoria.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {selectedCategory ? (
+                documentsByCategory[selectedCategory]?.length > 0 && (
+                  <DocumentCategorySection
+                    key={selectedCategory}
+                    category={selectedCategory}
+                    documents={documentsByCategory[selectedCategory]}
+                    isAdmin={isAdminOrBoard}
+                  />
+                )
+              ) : (
+                Object.entries(documentsByCategory).map(([category, docs]) => (
+                  docs.length > 0 && (
                     <DocumentCategorySection
-                      key={selectedCategory}
-                      category={selectedCategory}
-                      documents={documentsByCategory[selectedCategory]}
+                      key={category}
+                      category={category}
+                      documents={docs}
                       isAdmin={isAdminOrBoard}
                     />
                   )
-                ) : (
-                  Object.entries(documentsByCategory).map(([category, docs]) => (
-                    docs.length > 0 && (
-                      <DocumentCategorySection
-                        key={category}
-                        category={category}
-                        documents={docs}
-                        isAdmin={isAdminOrBoard}
-                      />
-                    )
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
-        
-        {/* Document Upload Dialog */}
-        <DocumentUploadDialog 
-          open={isUploadDialogOpen} 
-          onOpenChange={setIsUploadDialogOpen}
-        />
       </div>
-    </DashboardLayout>
+      
+      {/* Document Upload Dialog */}
+      <DocumentUploadDialog 
+        open={isUploadDialogOpen} 
+        onOpenChange={setIsUploadDialogOpen}
+      />
+    </div>
   );
 };
 
