@@ -20,6 +20,7 @@ import RequestsPage from './pages/RequestsPage';
 import { Toaster } from './components/ui/sonner';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/dashboard/DashboardLayout';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -35,32 +36,34 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
-          
-          <Route element={<ProtectedRoute allowedRoles={['resident', 'admin', 'director']} />}>
-            <Route element={<DashboardLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/residents" element={<ResidentsPage />} />
-              <Route path="/finance" element={<FinancePage />} />
-              <Route path="/documents" element={<DocumentsPage />} />
-              <Route path="/communication" element={<CommunicationPage />} />
-              <Route path="/requests" element={<RequestsPage />} />
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+            
+            <Route element={<ProtectedRoute allowedRoles={['resident', 'admin', 'director']} />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/residents" element={<ResidentsPage />} />
+                <Route path="/finance" element={<FinancePage />} />
+                <Route path="/documents" element={<DocumentsPage />} />
+                <Route path="/communication" element={<CommunicationPage />} />
+                <Route path="/requests" element={<RequestsPage />} />
+              </Route>
             </Route>
-          </Route>
-          
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route element={<DashboardLayout />}>
-              <Route path="/admin" element={<AdminPage />} />
+            
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/admin" element={<AdminPage />} />
+              </Route>
             </Route>
-          </Route>
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
