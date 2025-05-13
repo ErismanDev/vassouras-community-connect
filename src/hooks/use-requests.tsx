@@ -25,7 +25,10 @@ export const useRequests = () => {
       throw error;
     }
     
-    return data || [];
+    return data?.map(request => ({
+      ...request,
+      status: request.status as Request['status']
+    })) || [];
   };
 
   const fetchRequestResponses = async (requestId: string): Promise<RequestResponse[]> => {
@@ -63,7 +66,10 @@ export const useRequests = () => {
       throw error;
     }
     
-    return data;
+    return {
+      ...data,
+      status: data.status as Request['status']
+    };
   };
 
   const addResponse = async ({ requestId, response }: { requestId: string, response: string }): Promise<RequestResponse> => {
@@ -103,7 +109,10 @@ export const useRequests = () => {
       throw error;
     }
     
-    return data;
+    return {
+      ...data,
+      status: data.status as Request['status']
+    };
   };
 
   const useRequestsQuery = () => {

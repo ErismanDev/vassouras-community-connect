@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './button';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export type SidebarItem = {
   title: string;
@@ -78,7 +78,7 @@ interface SidebarProps {
 export function Sidebar({ className, userRole = 'resident' }: SidebarProps) {
   const { toast } = useToast();
   const location = useLocation();
-  const { isMobile } = useMobile();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(!isMobile);
 
   const filteredItems = sidebarItems.filter(

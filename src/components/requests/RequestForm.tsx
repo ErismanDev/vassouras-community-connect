@@ -52,7 +52,14 @@ export function RequestForm() {
   });
 
   const onSubmit = (values: RequestFormValues) => {
-    mutate(values, {
+    // Ensure all required fields are present and not undefined
+    const requestData = {
+      title: values.title,
+      category: values.category,
+      description: values.description
+    };
+    
+    mutate(requestData, {
       onSuccess: () => {
         form.reset();
       },

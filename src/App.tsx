@@ -41,7 +41,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           
-          <Route element={<ProtectedRoute roles={['resident', 'admin', 'director']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['resident', 'admin', 'director']} />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/residents" element={<ResidentsPage />} />
@@ -52,7 +52,7 @@ function App() {
             </Route>
           </Route>
           
-          <Route element={<ProtectedRoute roles={['admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<DashboardLayout />}>
               <Route path="/admin" element={<AdminPage />} />
             </Route>
