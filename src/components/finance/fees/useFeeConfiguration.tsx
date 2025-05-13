@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customSupabaseClient } from '@/integrations/supabase/customClient';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -28,35 +28,49 @@ export const useFeeConfiguration = () => {
   const { data: feeConfigs, isLoading } = useQuery({
     queryKey: ['feeConfigs'],
     queryFn: async () => {
-      const { data, error } = await customSupabaseClient
+      const { data, error } = await supabase
         .from('fee_configuration')
         .select('*')
         .order('start_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching fee configs:', error);
+        throw error;
+      }
       return data as FeeConfig[];
-    }
+    },
+    retry: 1
   });
   
   // Create fee configuration mutation
   const createFeeConfigMutation = useMutation({
     mutationFn: async (feeConfig: typeof newFeeConfig) => {
       // If there's an active fee config, update its end_date
-      const { data: activeConfig } = await customSupabaseClient
+      const { data: activeConfig, error: findError } = await supabase
         .from('fee_configuration')
         .select('id')
         .is('end_date', null)
         .single();
       
+      if (findError && findError.code !== 'PGRST116') { // Not found is ok
+        console.error('Error finding active config:', findError);
+        throw findError;
+      }
+      
       if (activeConfig) {
-        await customSupabaseClient
+        const { error: updateError } = await supabase
           .from('fee_configuration')
           .update({ end_date: format(new Date(feeConfig.start_date), 'yyyy-MM-dd') })
           .eq('id', activeConfig.id);
+          
+        if (updateError) {
+          console.error('Error updating active config:', updateError);
+          throw updateError;
+        }
       }
       
       // Create new fee configuration
-      const { data, error } = await customSupabaseClient
+      const { data, error } = await supabase
         .from('fee_configuration')
         .insert([
           {
@@ -64,9 +78,12 @@ export const useFeeConfiguration = () => {
             start_date: format(feeConfig.start_date, 'yyyy-MM-dd'),
             description: feeConfig.description
           }
-        ]);
+        ]).select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating fee config:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {

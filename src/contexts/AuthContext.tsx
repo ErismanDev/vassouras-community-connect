@@ -42,7 +42,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for existing session and set up listener
   useEffect(() => {
-    // First check for existing session (non-blocking)
+    // First set up the auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log('Auth state changed:', event);
+        
+        setSession(currentSession);
+        if (currentSession?.user) {
+          const { id, email, user_metadata } = currentSession.user;
+          const userData: User = {
+            id,
+            name: user_metadata?.name || email?.split('@')[0] || 'Usuário',
+            email: email || '',
+            role: user_metadata?.role || 'resident',
+          };
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+    
+    // Then check for existing session
     const initializeAuth = async () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -65,27 +86,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     };
-    
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log('Auth state changed:', event);
-        
-        setSession(currentSession);
-        if (currentSession?.user) {
-          const { id, email, user_metadata } = currentSession.user;
-          const userData: User = {
-            id,
-            name: user_metadata?.name || email?.split('@')[0] || 'Usuário',
-            email: email || '',
-            role: user_metadata?.role || 'resident',
-          };
-          setUser(userData);
-        } else {
-          setUser(null);
-        }
-      }
-    );
 
     // Initialize auth
     initializeAuth();
@@ -106,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
+        console.error('Login error:', error);
         throw error;
       }
       
@@ -114,7 +115,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate('/dashboard');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Falha ao fazer login');
+      console.error('Full login error:', error);
+      let errorMessage = 'Falha ao fazer login';
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Credenciais inválidas. Verifique seu e-mail e senha.';
+      } else if (error.message?.includes('invalid api key')) {
+        errorMessage = 'Erro de configuração. Por favor contate o administrador.';
+      }
+      
+      toast.error(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -137,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
+        console.error('Registration error:', error);
         throw error;
       }
       
@@ -145,7 +156,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate('/dashboard');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Falha ao registrar');
+      console.error('Full registration error:', error);
+      let errorMessage = 'Falha ao registrar';
+      
+      if (error.message?.includes('User already registered')) {
+        errorMessage = 'Este e-mail já está registrado.';
+      } else if (error.message?.includes('invalid api key')) {
+        errorMessage = 'Erro de configuração. Por favor contate o administrador.';
+      }
+      
+      toast.error(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -160,6 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.info('Logout realizado');
       navigate('/login');
     } catch (error: any) {
+      console.error('Logout error:', error);
       toast.error(error.message || 'Falha ao sair');
     }
   };

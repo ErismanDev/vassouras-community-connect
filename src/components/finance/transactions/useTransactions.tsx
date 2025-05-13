@@ -1,7 +1,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customSupabaseClient } from '@/integrations/supabase/customClient';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,7 +41,7 @@ export const useTransactions = () => {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactions', filters],
     queryFn: async () => {
-      let query = customSupabaseClient.from('financial_transactions').select('*');
+      let query = supabase.from('financial_transactions').select('*');
       
       if (filters.startDate) {
         query = query.gte('transaction_date', format(filters.startDate, 'yyyy-MM-dd'));
@@ -58,9 +58,13 @@ export const useTransactions = () => {
       
       const { data, error } = await query.order('transaction_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
       return data as TransactionProps[];
-    }
+    },
+    retry: 1
   });
 
   // Create transaction mutation
@@ -70,13 +74,16 @@ export const useTransactions = () => {
       let receiptUrl = null;
       if (transaction.receiptFile) {
         const fileName = `${Date.now()}-${transaction.receiptFile.name}`;
-        const { error: uploadError, data } = await customSupabaseClient.storage
+        const { error: uploadError, data } = await supabase.storage
           .from('financial_receipts')
           .upload(fileName, transaction.receiptFile);
         
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Receipt upload error:', uploadError);
+          throw uploadError;
+        }
         
-        const publicUrl = customSupabaseClient.storage
+        const publicUrl = supabase.storage
           .from('financial_receipts')
           .getPublicUrl(fileName).data.publicUrl;
           
@@ -84,7 +91,7 @@ export const useTransactions = () => {
       }
       
       // Create transaction record
-      const { data, error } = await customSupabaseClient.from('financial_transactions').insert([
+      const { data, error } = await supabase.from('financial_transactions').insert([
         {
           description: transaction.description,
           amount: parseFloat(transaction.amount),
@@ -96,7 +103,10 @@ export const useTransactions = () => {
         }
       ]).select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Transaction creation error:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {

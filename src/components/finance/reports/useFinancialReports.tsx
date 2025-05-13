@@ -1,9 +1,10 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { customSupabaseClient } from '@/integrations/supabase/customClient';
+import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 export interface TransactionProps {
   amount: number;
@@ -20,15 +21,19 @@ export const useFinancialReports = () => {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactionsReport', startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await customSupabaseClient
+      const { data, error } = await supabase
         .from('financial_transactions')
         .select('*')
         .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))
         .lte('transaction_date', format(endDate, 'yyyy-MM-dd'));
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transaction reports:', error);
+        throw error;
+      }
       return data as TransactionProps[];
-    }
+    },
+    retry: 1
   });
   
   // Monthly trend data
@@ -127,36 +132,44 @@ export const useFinancialReports = () => {
   
   const handleExportPDF = () => {
     // In a real application, this would generate a PDF report
-    alert('Esta funcionalidade geraria um relatório em PDF');
+    toast.info('Função de exportação para PDF em implementação');
   };
   
   const handleExportExcel = () => {
-    // For simplicity, we'll just export a CSV which can be opened in Excel
-    if (!transactions || !transactions.length) return;
-    
-    const headers = ['Data', 'Descrição', 'Valor', 'Tipo', 'Categoria'];
-    const csvData = transactions.map(t => [
-      format(new Date(t.transaction_date), 'dd/MM/yyyy'),
-      '', // Description not included in our simplified data model
-      t.amount.toString().replace('.', ','),
-      t.type === 'income' ? 'Receita' : 'Despesa',
-      t.category
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio-financeiro-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // For simplicity, we'll just export a CSV which can be opened in Excel
+      if (!transactions || !transactions.length) {
+        toast.error('Não há dados para exportar');
+        return;
+      }
+      
+      const headers = ['Data', 'Valor', 'Tipo', 'Categoria'];
+      const csvData = transactions.map(t => [
+        format(new Date(t.transaction_date), 'dd/MM/yyyy'),
+        t.amount.toString().replace('.', ','),
+        t.type === 'income' ? 'Receita' : 'Despesa',
+        t.category
+      ]);
+      
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `relatorio-financeiro-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Relatório exportado com sucesso');
+    } catch (error) {
+      console.error('Erro ao exportar relatório:', error);
+      toast.error('Erro ao exportar relatório');
+    }
   };
 
   return {
