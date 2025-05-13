@@ -228,6 +228,71 @@ export type Database = {
         }
         Relationships: []
       }
+      request_responses: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          request_id: string
+          response: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          request_id: string
+          response: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          request_id?: string
+          response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_responses_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requests: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,91 +1,69 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import ResidentsPage from "./pages/ResidentsPage";
-import UnauthorizedPage from "./pages/UnauthorizedPage";
-import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/ProtectedRoute";
-import CommunicationPage from "./pages/CommunicationPage";
-import AdminPage from "./pages/AdminPage";
-import FinancePage from "./pages/FinancePage";
-import DocumentsPage from "./pages/DocumentsPage";
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { supabase } from './integrations/supabase/client';
 
-const queryClient = new QueryClient();
+import Index from './pages/Index';
+import DashboardPage from './pages/DashboardPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import NotFound from './pages/NotFound';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import ResidentsPage from './pages/ResidentsPage';
+import FinancePage from './pages/FinancePage';
+import DocumentsPage from './pages/DocumentsPage';
+import CommunicationPage from './pages/CommunicationPage';
+import AdminPage from './pages/AdminPage';
+import RequestsPage from './pages/RequestsPage';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+import { Toaster } from './components/ui/sonner';
+import ProtectedRoute from './components/ProtectedRoute';
+import DashboardLayout from './components/dashboard/DashboardLayout';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/residents" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <ResidentsPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/communication" 
-              element={
-                <ProtectedRoute>
-                  <CommunicationPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'director']}>
-                  <AdminPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/finance" 
-              element={
-                <ProtectedRoute>
-                  <FinancePage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/documents" 
-              element={
-                <ProtectedRoute>
-                  <DocumentsPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/unauthorized" element={<UnauthorizedPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          
+          <Route element={<ProtectedRoute roles={['resident', 'admin', 'director']} />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/residents" element={<ResidentsPage />} />
+              <Route path="/finance" element={<FinancePage />} />
+              <Route path="/documents" element={<DocumentsPage />} />
+              <Route path="/communication" element={<CommunicationPage />} />
+              <Route path="/requests" element={<RequestsPage />} />
+            </Route>
+          </Route>
+          
+          <Route element={<ProtectedRoute roles={['admin']} />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/admin" element={<AdminPage />} />
+            </Route>
+          </Route>
+          
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+}
 
 export default App;
