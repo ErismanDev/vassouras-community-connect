@@ -12,18 +12,28 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface DocumentUploadDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ onSuccess }) => {
+const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ 
+  open, 
+  onOpenChange,
+  onSuccess 
+}) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('atas');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<'all' | 'board' | 'admin'>('all');
   const [file, setFile] = useState<File | null>(null);
+
+  // Use controlled or uncontrolled state based on props
+  const dialogOpen = open !== undefined ? open : isOpen;
+  const setDialogOpen = onOpenChange || setIsOpen;
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -31,7 +41,7 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ onSuccess }
       
       // Upload file to storage
       const fileName = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await customSupabaseClient.storage
+      const { error: uploadError, data } = await customSupabaseClient.storage
         .from('documents')
         .upload(fileName, file);
       
@@ -60,12 +70,8 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ onSuccess }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      setTitle('');
-      setCategory('atas');
-      setDescription('');
-      setVisibility('all');
-      setFile(null);
-      setOpen(false);
+      resetForm();
+      setDialogOpen(false);
       toast.success('Documento enviado com sucesso!');
       if (onSuccess) onSuccess();
     },
@@ -74,6 +80,14 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ onSuccess }
       toast.error('Erro ao enviar documento. Por favor, tente novamente.');
     }
   });
+
+  const resetForm = () => {
+    setTitle('');
+    setCategory('atas');
+    setDescription('');
+    setVisibility('all');
+    setFile(null);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -91,9 +105,9 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ onSuccess }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Button>Enviar Novo Documento</Button>
+        <Button className={onOpenChange ? 'hidden' : ''}>Enviar Novo Documento</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
@@ -172,7 +186,7 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({ onSuccess }
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => setDialogOpen(false)}
               disabled={uploadMutation.isPending}
             >
               Cancelar
