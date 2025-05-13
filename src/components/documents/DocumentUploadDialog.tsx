@@ -62,7 +62,8 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
             visibility,
             file_url: fileUrl,
             file_type: file.type,
-            description
+            description,
+            created_by: user.id
           }
         ]);
       
@@ -134,11 +135,14 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="estatuto">Estatutos</SelectItem>
                     <SelectItem value="atas">Atas de Assembleia</SelectItem>
-                    <SelectItem value="regimentos">Regimentos e Estatutos</SelectItem>
-                    <SelectItem value="financeiros">Relatórios Financeiros</SelectItem>
+                    <SelectItem value="regulamentos">Regimentos</SelectItem>
+                    <SelectItem value="financeiro">Relatórios Financeiros</SelectItem>
                     <SelectItem value="projetos">Projetos e Obras</SelectItem>
-                    <SelectItem value="outros">Outros Documentos</SelectItem>
+                    <SelectItem value="comunicados">Comunicados</SelectItem>
+                    <SelectItem value="juridico">Documentos Jurídicos</SelectItem>
+                    <SelectItem value="diversos">Outros Documentos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

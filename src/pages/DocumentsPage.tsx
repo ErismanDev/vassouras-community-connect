@@ -29,6 +29,7 @@ interface Document {
   file_type: string;
   created_at: string;
   visibility: 'all' | 'board' | 'admin';
+  description?: string;
 }
 
 const DocumentsPage: React.FC = () => {

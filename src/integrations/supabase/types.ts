@@ -87,6 +87,45 @@ export type Database = {
         }
         Relationships: []
       }
+      documents: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          description: string | null
+          file_type: string
+          file_url: string
+          id: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          file_type: string
+          file_url: string
+          id?: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       meeting_minutes: {
         Row: {
           content: string
