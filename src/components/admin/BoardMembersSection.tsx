@@ -30,18 +30,18 @@ const BoardMembersSection: React.FC = () => {
             user_metadata->name
           )
         `)
-        .order('position');
+        .order('created_at'); // Changed from 'position' to 'created_at'
 
       if (error) {
         console.error('Error fetching board members:', error);
         throw error;
       }
       
-      return data.map((member: any) => ({
+      return data?.map((member: any) => ({
         ...member,
         userName: member.user?.user_metadata?.name || member.user?.email?.split('@')[0] || 'Usuário',
         userEmail: member.user?.email || '',
-      }));
+      })) || [];
     },
   });
 

@@ -161,7 +161,7 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
                     {filteredUsers.map((user) => (
                       <CommandItem
                         key={user.id}
-                        value={user.id}
+                        value={user.id} // Ensure this value is not empty
                         onSelect={() => handleSelectUser(user.id, {
                           name: user.name || user.email.split('@')[0],
                           email: user.email
