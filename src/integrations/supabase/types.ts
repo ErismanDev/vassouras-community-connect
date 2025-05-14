@@ -54,35 +54,35 @@ export type Database = {
       board_members: {
         Row: {
           bio: string | null
-          created_at: string
+          created_at: string | null
           id: string
           photo_url: string | null
           position: string
           term_end: string | null
           term_start: string
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           bio?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           photo_url?: string | null
           position: string
           term_end?: string | null
           term_start: string
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           bio?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           photo_url?: string | null
           position?: string
           term_end?: string | null
           term_start?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -123,6 +123,72 @@ export type Database = {
           title?: string
           updated_at?: string
           visibility?: string
+        }
+        Relationships: []
+      }
+      fee_configuration: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          start_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          description: string
+          id: string
+          public: boolean | null
+          receipt_url: string | null
+          transaction_date: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          public?: boolean | null
+          receipt_url?: string | null
+          transaction_date: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          public?: boolean | null
+          receipt_url?: string | null
+          transaction_date?: string
+          type?: string
         }
         Relationships: []
       }
@@ -189,6 +255,60 @@ export type Database = {
           target_role?: string[] | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_fees: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          id: string
+          payment_date: string | null
+          reference_month: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_date: string
+          id?: string
+          payment_date?: string | null
+          reference_month: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          payment_date?: string | null
+          reference_month?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
         }
         Relationships: []
       }
@@ -293,12 +413,99 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          public: boolean
+          receipt_url: string | null
+          transaction_date: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          public?: boolean
+          receipt_url?: string | null
+          transaction_date: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          public?: boolean
+          receipt_url?: string | null
+          transaction_date?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      board_members_with_user: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          id: string | null
+          photo_url: string | null
+          position: string | null
+          term_end: string | null
+          term_start: string | null
+          updated_at: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      list_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          name: string
+          role: string
+        }[]
+      }
+      update_existing_user_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

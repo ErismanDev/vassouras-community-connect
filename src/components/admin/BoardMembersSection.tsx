@@ -32,7 +32,10 @@ const BoardMembersSection: React.FC = () => {
         `)
         .order('position');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching board members:', error);
+        throw error;
+      }
       
       return data.map((member: any) => ({
         ...member,

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/datepicker';
+import UserSearchSelect from './UserSearchSelect';
 
 const formSchema = z.object({
   userId: z.string().min(1, 'Selecione um usuário'),
@@ -43,6 +44,7 @@ interface BoardMemberFormProps {
 const BoardMemberForm: React.FC<BoardMemberFormProps> = ({ onClose, editingMember }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [selectedUserInfo, setSelectedUserInfo] = useState<{name: string; email: string} | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -112,6 +114,10 @@ const BoardMemberForm: React.FC<BoardMemberFormProps> = ({ onClose, editingMembe
     mutate(values);
   };
 
+  const handleUserDataChange = (userData: {name: string; email: string}) => {
+    setSelectedUserInfo(userData);
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -129,9 +135,13 @@ const BoardMemberForm: React.FC<BoardMemberFormProps> = ({ onClose, editingMembe
           name="userId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ID do Usuário</FormLabel>
+              <FormLabel>Usuário</FormLabel>
               <FormControl>
-                <Input placeholder="ID do usuário" {...field} />
+                <UserSearchSelect 
+                  value={field.value} 
+                  onChange={field.onChange}
+                  onUserDataChange={handleUserDataChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
