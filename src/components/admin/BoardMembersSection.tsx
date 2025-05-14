@@ -22,7 +22,7 @@ const BoardMembersSection: React.FC = () => {
     queryKey: ['boardMembers'],
     queryFn: async () => {
       try {
-        // Modified query to first get board members and then fetch user info separately
+        // Fetch board members without trying to join with user table directly
         const { data: boardMembersData, error } = await supabase
           .from('board_members')
           .select('*')
@@ -33,15 +33,22 @@ const BoardMembersSection: React.FC = () => {
           throw error;
         }
         
-        // If no data, return empty array to prevent "undefined is not iterable" error
         if (!boardMembersData || boardMembersData.length === 0) {
           return [];
         }
         
-        // Process each board member to fetch user information
+        // Process each board member to fetch user information separately
         const enhancedMembers = await Promise.all(
           boardMembersData.map(async (member) => {
             try {
+              if (!member.user_id) {
+                return {
+                  ...member,
+                  userName: 'Usuário não encontrado',
+                  userEmail: '',
+                };
+              }
+              
               const { data: userData, error: userError } = await supabase
                 .from('profiles')
                 .select('id, email')
@@ -73,12 +80,13 @@ const BoardMembersSection: React.FC = () => {
           })
         );
         
-        return enhancedMembers;
+        return enhancedMembers || [];
       } catch (error) {
         console.error('Exceção ao buscar membros da diretoria:', error);
         return [];
       }
     },
+    retry: 1,
   });
 
   const handleEdit = (member: any) => {

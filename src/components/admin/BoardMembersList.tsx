@@ -51,7 +51,7 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
   onDelete,
   isDeleting
 }) => {
-  if (!boardMembers.length) {
+  if (!boardMembers || boardMembers.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -63,9 +63,10 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
 
   const formatDate = (dateString: string) => {
     try {
+      if (!dateString) return '-';
       return new Date(dateString).toLocaleDateString('pt-BR');
     } catch (error) {
-      return dateString;
+      return dateString || '-';
     }
   };
 
@@ -86,8 +87,8 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
             <TableBody>
               {boardMembers.map((member) => (
                 <TableRow key={member.id}>
-                  <TableCell className="font-medium">{member.userName}</TableCell>
-                  <TableCell>{member.position}</TableCell>
+                  <TableCell className="font-medium">{member.userName || 'Usuário'}</TableCell>
+                  <TableCell>{member.position || '-'}</TableCell>
                   <TableCell>{formatDate(member.term_start)}</TableCell>
                   <TableCell>{member.term_end ? formatDate(member.term_end) : '-'}</TableCell>
                   {(onEdit || onDelete) && (
