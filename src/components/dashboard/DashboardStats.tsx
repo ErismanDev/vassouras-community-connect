@@ -5,44 +5,73 @@ import { supabase } from '@/integrations/supabase/client';
 import { StatCard } from './StatCard';
 import { Calendar, Users, MessageSquare, ListCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function DashboardStats() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      // Get residents count (placeholder - would need a residents table)
-      const residentsCount = 24; // Placeholder value
-      
-      // Get requests count
-      const { count: requestsCount, error: requestsError } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true });
-      
-      if (requestsError) throw requestsError;
-      
-      // Get pending requests
-      const { count: pendingRequestsCount, error: pendingError } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      
-      if (pendingError) throw pendingError;
-      
-      // Get messages count
-      const { count: messagesCount, error: messagesError } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true });
-      
-      if (messagesError) throw messagesError;
-      
-      return {
-        residents: residentsCount,
-        requests: requestsCount || 0,
-        pendingRequests: pendingRequestsCount || 0,
-        messages: messagesCount || 0,
-      };
+      try {
+        // Obter contagem de moradores (busca diretamente da tabela de perfis)
+        const { count: residentsCount, error: residentsError } = await supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true });
+        
+        if (residentsError) throw residentsError;
+        
+        // Obter contagem de solicitações
+        const { count: requestsCount, error: requestsError } = await supabase
+          .from('requests')
+          .select('*', { count: 'exact', head: true });
+        
+        if (requestsError) throw requestsError;
+        
+        // Obter solicitações pendentes
+        const { count: pendingRequestsCount, error: pendingError } = await supabase
+          .from('requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+        
+        if (pendingError) throw pendingError;
+        
+        // Obter contagem de mensagens
+        const { count: messagesCount, error: messagesError } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true });
+        
+        if (messagesError) throw messagesError;
+
+        // Obter data da próxima reunião (se houver)
+        const today = new Date();
+        const { data: meetings, error: meetingsError } = await supabase
+          .from('meeting_minutes')
+          .select('meeting_date')
+          .gte('meeting_date', today.toISOString().split('T')[0])
+          .order('meeting_date', { ascending: true })
+          .limit(1);
+          
+        let nextMeeting = null;
+        if (!meetingsError && meetings && meetings.length > 0) {
+          nextMeeting = {
+            date: format(new Date(meetings[0].meeting_date), 'dd MMM', { locale: ptBR }),
+            time: '16:00', // Horário padrão se não estiver disponível
+          };
+        }
+        
+        return {
+          residents: residentsCount || 0,
+          requests: requestsCount || 0,
+          pendingRequests: pendingRequestsCount || 0,
+          messages: messagesCount || 0,
+          nextMeeting
+        };
+      } catch (error) {
+        console.error('Erro ao buscar estatísticas do painel:', error);
+        throw error;
+      }
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
   
   if (isLoading) {
@@ -62,27 +91,27 @@ export function DashboardStats() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Residents"
+        title="Moradores"
         value={stats?.residents || 0}
-        description="Total active residents"
+        description="Total de moradores ativos"
         icon={<Users className="h-4 w-4" />}
       />
       <StatCard
-        title="Requests"
+        title="Solicitações"
         value={stats?.requests || 0}
-        description={`${stats?.pendingRequests || 0} pending`}
+        description={`${stats?.pendingRequests || 0} pendentes`}
         icon={<ListCheck className="h-4 w-4" />}
       />
       <StatCard
-        title="Messages"
+        title="Comunicados"
         value={stats?.messages || 0}
-        description="Community announcements"
+        description="Comunicados da comunidade"
         icon={<MessageSquare className="h-4 w-4" />}
       />
       <StatCard
-        title="Next Meeting"
-        value="May 21"
-        description="4:00 PM - Community Room"
+        title="Próxima Reunião"
+        value={stats?.nextMeeting ? stats.nextMeeting.date : 'A definir'}
+        description={stats?.nextMeeting ? `${stats.nextMeeting.time} - Sala Comunitária` : 'Sem reuniões agendadas'}
         icon={<Calendar className="h-4 w-4" />}
       />
     </div>

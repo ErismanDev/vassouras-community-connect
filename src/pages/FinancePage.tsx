@@ -14,7 +14,7 @@ const FinancePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('transactions');
   const [isPageLoading, setIsPageLoading] = useState(true);
 
-  // Add a loading state to ensure components don't render until user role is determined
+  // Adiciona um estado de carregamento para garantir que os componentes não renderizem até que o papel do usuário seja determinado
   useEffect(() => {
     if (user !== undefined) {
       setIsPageLoading(false);
@@ -24,7 +24,7 @@ const FinancePage: React.FC = () => {
   if (isPageLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-[calc(100vh-200px)]">
-        <Loader2 className="h-8 w-8 animate-spin text-association-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-association-primary mr-2" />
         <span className="ml-2 text-lg font-medium">Carregando...</span>
       </div>
     );

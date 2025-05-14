@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 
 interface TransactionProps {
   id: string;
@@ -44,7 +45,10 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactions, isL
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-10">
-                    Carregando transações...
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
+                      <span>Carregando transações...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : !transactions || transactions.length === 0 ? (
@@ -57,7 +61,7 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactions, isL
                 transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
-                      {format(new Date(transaction.transaction_date), 'dd/MM/yyyy')}
+                      {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
                     </TableCell>
                     <TableCell>{transaction.description}</TableCell>
                     <TableCell className={`font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>

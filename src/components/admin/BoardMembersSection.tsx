@@ -21,27 +21,32 @@ const BoardMembersSection: React.FC = () => {
   const { data: boardMembers, isLoading } = useQuery({
     queryKey: ['boardMembers'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('board_members')
-        .select(`
-          *,
-          user:user_id (
-            email,
-            user_metadata->name
-          )
-        `)
-        .order('created_at'); // Changed from 'position' to 'created_at'
+      try {
+        const { data, error } = await supabase
+          .from('board_members')
+          .select(`
+            *,
+            user:user_id (
+              email,
+              user_metadata->name
+            )
+          `)
+          .order('created_at');
 
-      if (error) {
-        console.error('Error fetching board members:', error);
-        throw error;
+        if (error) {
+          console.error('Erro ao buscar membros da diretoria:', error);
+          throw error;
+        }
+        
+        return data?.map((member: any) => ({
+          ...member,
+          userName: member.user?.user_metadata?.name || member.user?.email?.split('@')[0] || 'Usuário',
+          userEmail: member.user?.email || '',
+        })) || [];
+      } catch (error) {
+        console.error('Exceção ao buscar membros da diretoria:', error);
+        return [];
       }
-      
-      return data?.map((member: any) => ({
-        ...member,
-        userName: member.user?.user_metadata?.name || member.user?.email?.split('@')[0] || 'Usuário',
-        userEmail: member.user?.email || '',
-      })) || [];
     },
   });
 
