@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { CheckIcon, ChevronsUpDown, Loader2 } from "lucide-react";
+import { CheckIcon, ChevronsUpDown, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,6 +27,7 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserName, setSelectedUserName] = useState<string>('');
 
@@ -34,6 +35,7 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
   useEffect(() => {
     const fetchUsers = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -41,12 +43,18 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
         
         if (error) {
           console.error('Erro ao buscar usuários:', error);
+          setError('Não foi possível carregar a lista de usuários.');
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          setUsers([]);
           return;
         }
 
         const usersWithNames = data.map((user: any) => ({
-          id: user.id,
-          email: user.email || '',
+          id: user.id || 'user-id-fallback',
+          email: user.email || 'email@exemplo.com',
           name: user.email ? user.email.split('@')[0] : 'Usuário'
         }));
         
@@ -62,6 +70,7 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
 
       } catch (error) {
         console.error('Erro ao processar usuários:', error);
+        setError('Ocorreu um erro ao processar os dados dos usuários.');
       } finally {
         setIsLoading(false);
       }
@@ -113,6 +122,11 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="ml-2 text-sm">Carregando usuários...</span>
             </div>
+          ) : error ? (
+            <div className="flex items-center justify-center p-4 text-red-500">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <span className="text-sm">{error}</span>
+            </div>
           ) : (
             <>
               <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
@@ -120,7 +134,7 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
                 {filteredUsers.map((user) => (
                   <CommandItem
                     key={user.id}
-                    value={user.id || 'user-id-fallback'}
+                    value={user.id}
                     onSelect={() => handleSelectUser(user.id, {
                       name: user.name || user.email.split('@')[0],
                       email: user.email

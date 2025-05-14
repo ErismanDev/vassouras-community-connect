@@ -22,15 +22,10 @@ const BoardMembersSection: React.FC = () => {
     queryKey: ['boardMembers'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        // Modified query to first get board members and then fetch user info separately
+        const { data: boardMembersData, error } = await supabase
           .from('board_members')
-          .select(`
-            *,
-            user:user_id (
-              email,
-              user_metadata->name
-            )
-          `)
+          .select('*')
           .order('created_at');
 
         if (error) {
@@ -38,11 +33,47 @@ const BoardMembersSection: React.FC = () => {
           throw error;
         }
         
-        return data?.map((member: any) => ({
-          ...member,
-          userName: member.user?.user_metadata?.name || member.user?.email?.split('@')[0] || 'Usuário',
-          userEmail: member.user?.email || '',
-        })) || [];
+        // If no data, return empty array to prevent "undefined is not iterable" error
+        if (!boardMembersData || boardMembersData.length === 0) {
+          return [];
+        }
+        
+        // Process each board member to fetch user information
+        const enhancedMembers = await Promise.all(
+          boardMembersData.map(async (member) => {
+            try {
+              const { data: userData, error: userError } = await supabase
+                .from('profiles')
+                .select('id, email')
+                .eq('id', member.user_id)
+                .single();
+              
+              if (userError) {
+                console.warn(`Erro ao buscar usuário para membro ID ${member.id}:`, userError);
+                return {
+                  ...member,
+                  userName: 'Usuário não encontrado',
+                  userEmail: '',
+                };
+              }
+              
+              return {
+                ...member,
+                userName: userData?.email?.split('@')[0] || 'Usuário',
+                userEmail: userData?.email || '',
+              };
+            } catch (error) {
+              console.warn(`Exceção ao processar usuário para membro ID ${member.id}:`, error);
+              return {
+                ...member,
+                userName: 'Usuário não encontrado',
+                userEmail: '',
+              };
+            }
+          })
+        );
+        
+        return enhancedMembers;
       } catch (error) {
         console.error('Exceção ao buscar membros da diretoria:', error);
         return [];
