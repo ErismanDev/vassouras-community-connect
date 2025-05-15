@@ -1,101 +1,76 @@
 
-import React, { useEffect, useState } from 'react';
-import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { CheckIcon, ChevronsUpDown, Loader2, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React, { useState, useEffect } from 'react';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
 
 interface UserSearchSelectProps {
   value: string;
   onChange: (value: string) => void;
-  onUserDataChange?: (userData: {name: string; email: string}) => void;
+  onUserDataChange?: (userData: { name: string; email: string }) => void;
 }
 
-const UserSearchSelect: React.FC<UserSearchSelectProps> = ({ 
-  value, 
+export default function UserSearchSelect({
+  value,
   onChange,
   onUserDataChange
-}) => {
+}: UserSearchSelectProps) {
   const [open, setOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState<string>('');
 
-  // Fetch users
   useEffect(() => {
     const fetchUsers = async () => {
-      setIsLoading(true);
-      setError(null);
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, email');
+        setLoading(true);
+        const { data, error } = await supabase.from('profiles').select('id, email');
         
         if (error) {
           console.error('Erro ao buscar usuários:', error);
-          setError('Não foi possível carregar a lista de usuários.');
           return;
         }
-
-        if (!data || data.length === 0) {
-          setUsers([]);
-          return;
-        }
-
-        const usersWithNames = data.map((user: any) => ({
-          id: user.id || 'user-id-fallback',
-          email: user.email || 'email@exemplo.com',
-          name: user.email ? user.email.split('@')[0] : 'Usuário'
-        }));
         
-        setUsers(usersWithNames);
-
-        // Set selected user name from value
+        // Ensure we always have an array to avoid issues later
+        const usersArray = Array.isArray(data) ? data : [];
+        setUsers(usersArray);
+        
+        // If we have a value (user ID) already selected, find and display their name
         if (value) {
-          const selectedUser = usersWithNames.find(user => user.id === value);
+          const selectedUser = usersArray.find(user => user.id === value);
           if (selectedUser) {
-            setSelectedUserName(selectedUser.name);
+            setSelectedUserName(selectedUser.email.split('@')[0] || 'Usuário');
+            onUserDataChange?.({
+              name: selectedUser.email.split('@')[0] || 'Usuário',
+              email: selectedUser.email
+            });
           }
         }
-
       } catch (error) {
-        console.error('Erro ao processar usuários:', error);
-        setError('Ocorreu um erro ao processar os dados dos usuários.');
+        console.error('Erro ao buscar usuários:', error);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     fetchUsers();
-  }, [value]);
+  }, [value, onUserDataChange]);
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      user.name.toLowerCase().includes(searchLower) ||
-      user.email.toLowerCase().includes(searchLower)
-    );
-  });
-
-  const handleSelectUser = (userId: string, userData: {name: string; email: string}) => {
-    onChange(userId);
-    setSelectedUserName(userData.name);
-    if (onUserDataChange) {
-      onUserDataChange(userData);
-    }
-    setOpen(false);
-  };
+  // Make sure we have a display value, fallback if not
+  const displayValue = selectedUserName || (value ? "Usuário selecionado" : "Selecione um usuário");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -105,60 +80,51 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          disabled={loading}
         >
-          {value && selectedUserName ? selectedUserName : "Selecione um usuário"}
+          {loading ? "Carregando..." : displayValue}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
+      <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput 
-            placeholder="Buscar usuário..." 
-            value={searchTerm}
-            onValueChange={setSearchTerm}
-          />
-          {isLoading ? (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="ml-2 text-sm">Carregando usuários...</span>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center p-4 text-red-500">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{error}</span>
-            </div>
-          ) : (
-            <>
-              <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
-              <CommandGroup className="max-h-[300px] overflow-auto">
-                {filteredUsers.map((user) => (
-                  <CommandItem
-                    key={user.id}
-                    value={user.id}
-                    onSelect={() => handleSelectUser(user.id, {
-                      name: user.name || user.email.split('@')[0],
+          <CommandInput placeholder="Buscar usuário..." />
+          <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+          <CommandGroup>
+            {Array.isArray(users) && users.map((user) => (
+              <CommandItem
+                key={user.id}
+                value={user.id}
+                onSelect={() => {
+                  const newValue = user.id === value ? '' : user.id;
+                  onChange(newValue);
+                  
+                  if (newValue) {
+                    setSelectedUserName(user.email.split('@')[0] || 'Usuário');
+                    onUserDataChange?.({
+                      name: user.email.split('@')[0] || 'Usuário',
                       email: user.email
-                    })}
-                  >
-                    <CheckIcon
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === user.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span>{user.name}</span>
-                      <span className="text-xs text-gray-500">{user.email}</span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </>
-          )}
+                    });
+                  } else {
+                    setSelectedUserName('');
+                    onUserDataChange?.({ name: '', email: '' });
+                  }
+                  
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === user.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {user.email ? user.email.split('@')[0] : 'Usuário'} ({user.email || 'Sem email'})
+              </CommandItem>
+            ))}
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>
   );
-};
-
-export default UserSearchSelect;
+}

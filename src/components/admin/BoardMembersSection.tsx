@@ -22,7 +22,7 @@ const BoardMembersSection: React.FC = () => {
     queryKey: ['boardMembers'],
     queryFn: async () => {
       try {
-        // Fetch board members without trying to join with user table directly
+        // Fetch board members without joining with user table
         const { data: boardMembersData, error } = await supabase
           .from('board_members')
           .select('*')
@@ -33,15 +33,35 @@ const BoardMembersSection: React.FC = () => {
           throw error;
         }
         
+        // Early return if no data to prevent undefined issues later
         if (!boardMembersData || boardMembersData.length === 0) {
+          console.log('Nenhum membro da diretoria encontrado');
           return [];
         }
         
-        // Process each board member to fetch user information separately
+        // Process each board member with robust error handling
         const enhancedMembers = await Promise.all(
           boardMembersData.map(async (member) => {
             try {
+              // Handle case where user_id might be null/undefined
               if (!member.user_id) {
+                console.log('Membro sem user_id:', member.id);
+                return {
+                  ...member,
+                  userName: 'Usuário não vinculado',
+                  userEmail: '',
+                };
+              }
+              
+              // Fetch user profile data for this board member
+              const { data: userData, error: userError } = await supabase
+                .from('profiles')
+                .select('id, email')
+                .eq('id', member.user_id)
+                .maybeSingle();
+              
+              if (userError) {
+                console.warn(`Erro ao buscar usuário para membro ID ${member.id}:`, userError);
                 return {
                   ...member,
                   userName: 'Usuário não encontrado',
@@ -49,14 +69,8 @@ const BoardMembersSection: React.FC = () => {
                 };
               }
               
-              const { data: userData, error: userError } = await supabase
-                .from('profiles')
-                .select('id, email')
-                .eq('id', member.user_id)
-                .single();
-              
-              if (userError) {
-                console.warn(`Erro ao buscar usuário para membro ID ${member.id}:`, userError);
+              if (!userData) {
+                console.warn(`Usuário não encontrado para membro ID ${member.id}`);
                 return {
                   ...member,
                   userName: 'Usuário não encontrado',
@@ -73,20 +87,24 @@ const BoardMembersSection: React.FC = () => {
               console.warn(`Exceção ao processar usuário para membro ID ${member.id}:`, error);
               return {
                 ...member,
-                userName: 'Usuário não encontrado',
+                userName: 'Erro ao carregar usuário',
                 userEmail: '',
               };
             }
           })
         );
         
-        return enhancedMembers || [];
+        // Ensure we always return an array, even if Promise.all somehow fails
+        return Array.isArray(enhancedMembers) ? enhancedMembers : [];
       } catch (error) {
         console.error('Exceção ao buscar membros da diretoria:', error);
+        // Always return an array in error cases
         return [];
       }
     },
-    retry: 1,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const handleEdit = (member: any) => {
@@ -121,6 +139,9 @@ const BoardMembersSection: React.FC = () => {
       </div>
     );
   }
+
+  // Ensure boardMembers is always an array
+  const safeBoardMembers = Array.isArray(boardMembers) ? boardMembers : [];
 
   return (
     <div className="space-y-6">
@@ -157,7 +178,7 @@ const BoardMembersSection: React.FC = () => {
         </Card>
       ) : (
         <BoardMembersList 
-          boardMembers={boardMembers || []} 
+          boardMembers={safeBoardMembers} 
           onEdit={isAdmin ? handleEdit : undefined}
           onDelete={isAdmin ? (id) => deleteMutation.mutate(id) : undefined}
           isDeleting={deleteMutation.isPending}

@@ -51,7 +51,10 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
   onDelete,
   isDeleting
 }) => {
-  if (!boardMembers || boardMembers.length === 0) {
+  // Extra safety check to ensure we have a valid array
+  const safeMembers = Array.isArray(boardMembers) ? boardMembers : [];
+  
+  if (!safeMembers || safeMembers.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -61,11 +64,12 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
     );
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null | undefined) => {
     try {
       if (!dateString) return '-';
       return new Date(dateString).toLocaleDateString('pt-BR');
     } catch (error) {
+      console.warn('Erro ao formatar data:', error);
       return dateString || '-';
     }
   };
@@ -85,8 +89,8 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {boardMembers.map((member) => (
-                <TableRow key={member.id}>
+              {safeMembers.map((member) => (
+                <TableRow key={member.id || `member-${Math.random()}`}>
                   <TableCell className="font-medium">{member.userName || 'Usuário'}</TableCell>
                   <TableCell>{member.position || '-'}</TableCell>
                   <TableCell>{formatDate(member.term_start)}</TableCell>
@@ -106,7 +110,7 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
                           </Button>
                         )}
                         
-                        {onDelete && (
+                        {onDelete && member.id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -122,7 +126,7 @@ const BoardMembersList: React.FC<BoardMembersListProps> = ({
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Deseja realmente excluir o membro {member.userName} da diretoria?
+                                  Deseja realmente excluir o membro {member.userName || 'selecionado'} da diretoria?
                                   Esta ação não pode ser desfeita.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
