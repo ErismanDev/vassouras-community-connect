@@ -596,6 +596,30 @@ export type Database = {
         Args: { p_amount: number; p_start_date: string; p_description?: string }
         Returns: Json
       }
+      generate_monthly_fees_batch: {
+        Args: {
+          p_reference_month: string
+          p_due_date: string
+          p_description?: string
+        }
+        Returns: {
+          inserted_count: number
+          total_amount: number
+          month_year: string
+        }[]
+      }
+      get_auth_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_director: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       list_users: {
         Args: Record<PropertyKey, never>
         Returns: {
