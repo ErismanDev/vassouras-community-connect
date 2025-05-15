@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { Session, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
 
 export type UserRole = 'admin' | 'director' | 'resident';
 
@@ -14,11 +14,19 @@ export interface User {
   role: UserRole;
 }
 
+interface AuthResponse {
+  data: {
+    user: SupabaseUser;
+    session: Session | null;
+  } | null;
+  error: AuthError | null;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole) => Promise<AuthResponse>;
   logout: () => void;
   loading: boolean;
   session: Session | null;
@@ -131,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
+  const register = async (name: string, email: string, password: string, role: UserRole): Promise<AuthResponse> => {
     setLoading(true);
     
     try {
@@ -148,13 +156,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Registration error:', error);
-        throw error;
+        toast.error(error.message || 'Falha ao registrar');
+        return { data: null, error };
       }
       
       if (data) {
         toast.success('Registro realizado com sucesso!');
         navigate('/dashboard');
       }
+      
+      return { data, error: null };
     } catch (error: any) {
       console.error('Full registration error:', error);
       let errorMessage = 'Falha ao registrar';
@@ -166,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       toast.error(errorMessage);
-      throw error;
+      return { data: null, error: { message: errorMessage, status: 400 } as AuthError };
     } finally {
       setLoading(false);
     }

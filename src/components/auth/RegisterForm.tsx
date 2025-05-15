@@ -47,20 +47,20 @@ const RegisterForm: React.FC = () => {
     
     try {
       // Register the user with Supabase Auth
-      const { data: authData, error: authError } = await register(name, email, password, role);
+      const response = await register(name, email, password, role);
       
-      if (authError) {
-        throw authError;
+      if (response.error) {
+        throw response.error;
       }
       
-      if (authData) {
+      if (response.data?.user) {
         // Create resident record linked to the user account
         const { error: residentError } = await supabase
           .from('residents')
           .insert({
             name,
             email,
-            user_id: authData.user.id,
+            user_id: response.data.user.id,
             is_director: isDirector,
             director_position: isDirector ? directorPosition : null,
             // Add minimum required fields with default values
@@ -92,7 +92,7 @@ const RegisterForm: React.FC = () => {
           const { error: boardError } = await supabase
             .from('board_members')
             .insert({
-              user_id: authData.user.id,
+              user_id: response.data.user.id,
               position: directorPosition,
               term_start: new Date().toISOString().split('T')[0]
             });
