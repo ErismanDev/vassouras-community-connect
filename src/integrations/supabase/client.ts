@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Valores de ambiente ou constantes
@@ -11,6 +10,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: localStorage
+    storage: localStorage,
+    storageKey: 'vassouras-community-auth-token',
+    debug: true
+  }
+});
+
+// Verificar a autenticação atual e informar em console
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Erro ao verificar a sessão do Supabase:', error);
+  } else if (data.session) {
+    console.log('Supabase: Usuário autenticado com ID:', data.session.user.id);
+  } else {
+    console.log('Supabase: Nenhum usuário autenticado');
+  }
+});
+
+// Configurar listener de alteração de autenticação
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Supabase: Evento de autenticação:', event);
+  if (session) {
+    console.log('Supabase: Usuário autenticado:', session.user.id);
+  } else {
+    console.log('Supabase: Usuário desconectado');
   }
 });

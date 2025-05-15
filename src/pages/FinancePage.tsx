@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import TransactionsSection from '@/components/finance/TransactionsSection';
@@ -7,10 +6,13 @@ import FeeConfigurationSection from '@/components/finance/FeeConfigurationSectio
 import FinancialReportsSection from '@/components/finance/FinancialReportsSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const FinancePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const isAdminOrDirector = user?.role === 'admin' || user?.role === 'director';
+  const isAdmin = user?.role === 'admin';
   const [activeTab, setActiveTab] = useState('transactions');
   const [isPageLoading, setIsPageLoading] = useState(true);
 
@@ -21,11 +23,33 @@ const FinancePage: React.FC = () => {
     }
   }, [user]);
 
+  // Redireciona para a aba de transações se o usuário tentar acessar config sem ser admin
+  useEffect(() => {
+    if (activeTab === 'config' && !isAdmin) {
+      setActiveTab('transactions');
+    }
+  }, [activeTab, isAdmin]);
+
   if (isPageLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-[calc(100vh-200px)]">
         <Loader2 className="h-8 w-8 animate-spin text-association-primary mr-2" />
         <span className="ml-2 text-lg font-medium">Carregando...</span>
+      </div>
+    );
+  }
+  
+  // Verifica se o usuário está autenticado
+  if (!user || !session) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso Negado</AlertTitle>
+          <AlertDescription>
+            Você precisa estar logado para acessar esta página.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -40,7 +64,7 @@ const FinancePage: React.FC = () => {
           {isAdminOrDirector && (
             <TabsTrigger value="fees">Mensalidades</TabsTrigger>
           )}
-          {user?.role === 'admin' && (
+          {isAdmin && (
             <TabsTrigger value="config">Configuração</TabsTrigger>
           )}
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
@@ -56,7 +80,7 @@ const FinancePage: React.FC = () => {
           </TabsContent>
         )}
         
-        {user?.role === 'admin' && (
+        {isAdmin && (
           <TabsContent value="config">
             <FeeConfigurationSection />
           </TabsContent>

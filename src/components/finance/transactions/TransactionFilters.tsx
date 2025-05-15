@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/datepicker';
@@ -50,7 +49,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="income">Receita</SelectItem>
               <SelectItem value="expense">Despesa</SelectItem>
             </SelectGroup>
@@ -62,7 +61,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
               {categories.map(category => (
                 <SelectItem key={category} value={category}>
                   {category}

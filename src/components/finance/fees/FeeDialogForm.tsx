@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/ui/datepicker';
+import { useAuth } from '@/contexts/AuthContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FeeFormState {
   amount: string;
@@ -30,12 +31,23 @@ const FeeDialogForm: React.FC<FeeDialogFormProps> = ({
   isPending,
   onSubmit
 }) => {
+  const { user, session } = useAuth();
+  
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Definir Novo Valor de Mensalidade</DialogTitle>
         </DialogHeader>
+        
+        {(user?.role !== 'admin' || !session) && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Você precisa ser um administrador para modificar configurações de mensalidades.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="fee-amount">Valor da Mensalidade (R$)</Label>
@@ -77,7 +89,7 @@ const FeeDialogForm: React.FC<FeeDialogFormProps> = ({
           <Button 
             type="button"
             onClick={onSubmit}
-            disabled={isPending || !feeFormState.amount || !feeFormState.description}
+            disabled={isPending || !feeFormState.amount || !feeFormState.description || !user || user.role !== 'admin' || !session}
           >
             {isPending ? 'Salvando...' : 'Salvar'}
           </Button>

@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,8 +23,8 @@ export const useTransactions = () => {
   const [filters, setFilters] = useState({
     startDate: undefined as Date | undefined,
     endDate: undefined as Date | undefined,
-    type: '',
-    category: ''
+    type: 'all',
+    category: 'all'
   });
   const [newTransaction, setNewTransaction] = useState({
     description: '',
@@ -49,10 +48,10 @@ export const useTransactions = () => {
       if (filters.endDate) {
         query = query.lte('transaction_date', format(filters.endDate, 'yyyy-MM-dd'));
       }
-      if (filters.type) {
+      if (filters.type && filters.type !== 'all') {
         query = query.eq('type', filters.type);
       }
-      if (filters.category) {
+      if (filters.category && filters.category !== 'all') {
         query = query.eq('category', filters.category);
       }
       
@@ -190,8 +189,8 @@ export const useTransactions = () => {
     setFilters({
       startDate: undefined,
       endDate: undefined,
-      type: '',
-      category: ''
+      type: 'all',
+      category: 'all'
     });
   };
 

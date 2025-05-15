@@ -44,7 +44,7 @@ const MonthlyFeesSection: React.FC = () => {
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
   const [isMarkPaidDialogOpen, setIsMarkPaidDialogOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(new Date());
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   
   // State for batch creation
   const [batchMonth, setBatchMonth] = useState<Date>(new Date());
@@ -74,7 +74,7 @@ const MonthlyFeesSection: React.FC = () => {
         query = query.gte('reference_month', startDate).lt('reference_month', endDate);
       }
       
-      if (selectedStatus) {
+      if (selectedStatus && selectedStatus !== 'all') {
         query = query.eq('status', selectedStatus);
       }
       
@@ -290,7 +290,7 @@ const MonthlyFeesSection: React.FC = () => {
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="pending">Pendentes</SelectItem>
                 <SelectItem value="paid">Pagas</SelectItem>
                 <SelectItem value="overdue">Atrasadas</SelectItem>
@@ -299,7 +299,7 @@ const MonthlyFeesSection: React.FC = () => {
           </div>
           <Button variant="outline" onClick={() => {
             setSelectedMonth(undefined);
-            setSelectedStatus('');
+            setSelectedStatus('all');
           }} className="mt-6">
             Limpar Filtros
           </Button>

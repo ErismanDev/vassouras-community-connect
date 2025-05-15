@@ -77,11 +77,10 @@ const BoardMembersSection: React.FC = () => {
                 };
               }
               
-              const user = userData[0];
               return {
                 ...member,
-                userName: user.email ? user.email.split('@')[0] || 'Usuário' : 'Usuário',
-                userEmail: user.email || '',
+                userName: userData.email ? userData.email.split('@')[0] || 'Usuário' : 'Usuário',
+                userEmail: userData.email || '',
               };
             } catch (error) {
               console.warn(`Exceção ao processar usuário para membro ID ${member.id}:`, error);

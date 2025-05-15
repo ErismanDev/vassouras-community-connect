@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface FeeConfig {
   id: string;
@@ -17,6 +17,7 @@ export interface FeeConfig {
 
 export const useFeeConfiguration = () => {
   const queryClient = useQueryClient();
+  const { user, session } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newFeeConfig, setNewFeeConfig] = useState({
     amount: '',
@@ -45,31 +46,34 @@ export const useFeeConfiguration = () => {
   // Create fee configuration mutation
   const createFeeConfigMutation = useMutation({
     mutationFn: async (feeConfig: typeof newFeeConfig) => {
-      // If there's an active fee config, update its end_date
+      // Verificar se o usuário está autenticado
+      if (!user) {
+        throw new Error('Você precisa estar autenticado para atualizar configurações de mensalidades');
+      }
+
+      // Atualizar a configuração ativa, se existir
       const { data: activeConfig, error: findError } = await supabase
         .from('fee_configuration')
         .select('id')
         .is('end_date', null)
         .single();
-      
+
       if (findError && findError.code !== 'PGRST116') { // Not found is ok
-        console.error('Error finding active config:', findError);
         throw findError;
       }
-      
+
       if (activeConfig) {
         const { error: updateError } = await supabase
           .from('fee_configuration')
           .update({ end_date: format(new Date(feeConfig.start_date), 'yyyy-MM-dd') })
           .eq('id', activeConfig.id);
-          
+
         if (updateError) {
-          console.error('Error updating active config:', updateError);
           throw updateError;
         }
       }
-      
-      // Create new fee configuration
+
+      // Inserir nova configuração de mensalidade
       const { data, error } = await supabase
         .from('fee_configuration')
         .insert([
@@ -77,13 +81,15 @@ export const useFeeConfiguration = () => {
             amount: parseFloat(feeConfig.amount),
             start_date: format(feeConfig.start_date, 'yyyy-MM-dd'),
             description: feeConfig.description
+            // Não envia created_by, user_id, owner_id, auth_id
           }
-        ]).select();
-      
+        ])
+        .select();
+
       if (error) {
-        console.error('Error creating fee config:', error);
         throw error;
       }
+
       return data;
     },
     onSuccess: () => {
@@ -96,9 +102,19 @@ export const useFeeConfiguration = () => {
       });
       toast.success('Valor de mensalidade atualizado com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating fee config:', error);
-      toast.error('Erro ao atualizar valor da mensalidade');
+      let errorMsg = 'Erro ao atualizar valor da mensalidade.';
+      
+      if (error.message) {
+        if (error.message.includes('row-level security policy')) {
+          errorMsg += ' Você não tem permissão para esta operação. Verifique se você está logado como administrador.';
+        } else {
+          errorMsg += ' ' + error.message;
+        }
+      }
+      
+      toast.error(errorMsg);
     }
   });
   
