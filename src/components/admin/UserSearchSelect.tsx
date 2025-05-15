@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -131,7 +130,7 @@ const UserSearchSelect: React.FC<UserSearchSelectProps> = ({
             <>
               <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
               <CommandGroup className="max-h-[300px] overflow-auto">
-                {filteredUsers.map((user) => (
+                {(filteredUsers ?? []).filter(Boolean).map((user) => (
                   <CommandItem
                     key={user.id}
                     value={user.id}

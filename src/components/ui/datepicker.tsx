@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
@@ -19,8 +18,33 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ date, setDate }: DatePickerProps) {
+  const [open, setOpen] = React.useState(false);
+  
+  // Função para lidar com a seleção de datas de forma segura
+  const handleSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    // Fechamos o popover após a seleção para evitar problemas de referência
+    setTimeout(() => {
+      setOpen(false);
+    }, 0);
+  };
+
+  // Referência para verificar se o componente ainda está montado antes de atualizar o estado
+  const isMounted = React.useRef(true);
+  
+  React.useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={(isOpen) => {
+      // Só atualizamos o estado se o componente ainda estiver montado
+      if (isMounted.current) {
+        setOpen(isOpen);
+      }
+    }}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
@@ -37,7 +61,7 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
         <Calendar
           mode="single"
           selected={date}
-          onSelect={setDate}
+          onSelect={handleSelect}
           initialFocus
           locale={ptBR}
         />

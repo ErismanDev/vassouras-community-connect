@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,6 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DocumentPreview {
   name: string;
@@ -14,6 +16,8 @@ interface DocumentPreview {
 }
 
 const ResidentForm: React.FC = () => {
+  const { user } = useAuth();
+  
   // Personal data state
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
@@ -97,6 +101,27 @@ const ResidentForm: React.FC = () => {
     }));
   };
   
+  const uploadFileToStorage = async (file: File, path: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const filePath = `${path}/${fileName}`;
+    
+    const { data, error } = await supabase.storage
+      .from('resident-documents')
+      .upload(filePath, file);
+      
+    if (error) {
+      console.error('Erro ao fazer upload do arquivo:', error);
+      throw new Error(`Erro no upload: ${error.message}`);
+    }
+    
+    const { data: publicUrlData } = supabase.storage
+      .from('resident-documents')
+      .getPublicUrl(filePath);
+      
+    return publicUrlData.publicUrl;
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -127,16 +152,66 @@ const ResidentForm: React.FC = () => {
     }
     
     try {
-      // Simulate API call - In a real app, you would send this to your backend
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Upload dos documentos para o Storage
+      const idDocumentUrl = await uploadFileToStorage(
+        documents.idDocument.file, 
+        'identity-documents'
+      );
+      
+      const proofOfResidenceUrl = await uploadFileToStorage(
+        documents.proofOfResidence.file,
+        'proof-of-residence'
+      );
+      
+      // Dados para inserção no banco
+      const residentData = {
+        // Dados pessoais
+        name,
+        cpf: cpf.replace(/\D/g, ''), // Remove formatação
+        rg,
+        birth_date: birthDate,
+        phone: phone.replace(/\D/g, ''), // Remove formatação
+        email,
+        
+        // Endereço
+        street,
+        number,
+        complement,
+        neighborhood,
+        city,
+        state,
+        zip_code: zipCode.replace(/\D/g, ''), // Remove formatação
+        
+        // Dados eleitorais
+        voter_title: voterTitle,
+        electoral_zone: zone,
+        electoral_section: section,
+        
+        // Documentos
+        id_document_url: idDocumentUrl,
+        proof_of_residence_url: proofOfResidenceUrl,
+        
+        // Metadados
+        created_by: user?.id,
+        created_at: new Date().toISOString(),
+        status: 'active'
+      };
+      
+      // Inserção no banco de dados
+      const { data, error } = await supabase
+        .from('residents')
+        .insert([residentData])
+        .select();
+      
+      if (error) {
+        console.error('Erro ao inserir morador:', error);
+        throw new Error(`Erro ao salvar: ${error.message}`);
+      }
       
       toast.success('Morador cadastrado com sucesso!');
-      
-      // In a real app, you might redirect or clear the form
-      // For demo purposes, we'll just reset the form
       resetForm();
-    } catch (error) {
-      toast.error('Erro ao cadastrar morador. Tente novamente.');
+    } catch (error: any) {
+      toast.error(`Erro ao cadastrar morador: ${error.message}`);
       console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);
@@ -198,7 +273,6 @@ const ResidentForm: React.FC = () => {
                     id="cpf"
                     value={cpf}
                     onChange={(e) => setCpf(formatCpf(e.target.value))}
-                    maxLength={14}
                     required
                   />
                 </div>
@@ -230,13 +304,12 @@ const ResidentForm: React.FC = () => {
                     id="phone"
                     value={phone}
                     onChange={(e) => setPhone(formatPhone(e.target.value))}
-                    maxLength={15}
                     required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail *</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -257,7 +330,6 @@ const ResidentForm: React.FC = () => {
                     id="zipCode"
                     value={zipCode}
                     onChange={(e) => setZipCode(formatZipCode(e.target.value))}
-                    maxLength={9}
                     required
                   />
                 </div>

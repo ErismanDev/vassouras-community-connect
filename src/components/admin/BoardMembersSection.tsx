@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,13 +32,12 @@ const BoardMembersSection: React.FC = () => {
           throw error;
         }
         
-        if (!boardMembersData || boardMembersData.length === 0) {
-          return [];
-        }
+        // Garantir que boardMembersData é um array
+        const safeData = boardMembersData || [];
         
         // Process each board member to fetch user information separately
         const enhancedMembers = await Promise.all(
-          boardMembersData.map(async (member) => {
+          safeData.map(async (member) => {
             try {
               if (!member.user_id) {
                 return {
@@ -49,14 +47,15 @@ const BoardMembersSection: React.FC = () => {
                 };
               }
               
+              console.log(`Buscando usuário para membro ID ${member.id} com user_id ${member.user_id}`);
               const { data: userData, error: userError } = await supabase
                 .from('profiles')
                 .select('id, email')
-                .eq('id', member.user_id)
-                .single();
+                .eq('id', member.user_id);
               
-              if (userError) {
-                console.warn(`Erro ao buscar usuário para membro ID ${member.id}:`, userError);
+              console.log('Dados retornados:', userData);
+              if (userError || !userData || userData.length === 0) {
+                console.warn(`Erro ao buscar usuário para membro ID ${member.id}:`, userError || 'Nenhum erro específico retornado');
                 return {
                   ...member,
                   userName: 'Usuário não encontrado',
@@ -64,10 +63,11 @@ const BoardMembersSection: React.FC = () => {
                 };
               }
               
+              const user = userData[0];
               return {
                 ...member,
-                userName: userData?.email?.split('@')[0] || 'Usuário',
-                userEmail: userData?.email || '',
+                userName: user.email ? user.email.split('@')[0] || 'Usuário' : 'Usuário',
+                userEmail: user.email || '',
               };
             } catch (error) {
               console.warn(`Exceção ao processar usuário para membro ID ${member.id}:`, error);
@@ -80,6 +80,7 @@ const BoardMembersSection: React.FC = () => {
           })
         );
         
+        console.log('Dados:', enhancedMembers);
         return enhancedMembers || [];
       } catch (error) {
         console.error('Exceção ao buscar membros da diretoria:', error);
@@ -95,8 +96,12 @@ const BoardMembersSection: React.FC = () => {
   };
 
   const handleFormClose = () => {
-    setIsFormOpen(false);
-    setEditingMember(null);
+    // Garantir que todas as refs e states sejam atualizados antes de fechar o formulário
+    // Isso evita erros com o DatePicker/Popover
+    setTimeout(() => {
+      setIsFormOpen(false);
+      setEditingMember(null);
+    }, 150);
   };
 
   const deleteMutation = useMutation({
@@ -134,7 +139,6 @@ const BoardMembersSection: React.FC = () => {
             Gerenciar os membros da diretoria da associação
           </p>
         </div>
-        
         {isAdmin && !isFormOpen && (
           <Button 
             onClick={() => setIsFormOpen(true)}
@@ -145,8 +149,7 @@ const BoardMembersSection: React.FC = () => {
           </Button>
         )}
       </div>
-
-      {isFormOpen ? (
+      {isFormOpen && (
         <Card>
           <CardContent className="pt-6">
             <BoardMemberForm 
@@ -155,7 +158,8 @@ const BoardMembersSection: React.FC = () => {
             />
           </CardContent>
         </Card>
-      ) : (
+      )}
+      {!isFormOpen && (
         <BoardMembersList 
           boardMembers={boardMembers || []} 
           onEdit={isAdmin ? handleEdit : undefined}
