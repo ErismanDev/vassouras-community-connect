@@ -1,46 +1,90 @@
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, FileText, PlusCircle, Download, Pencil } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { Loader2, PlusCircle, Pencil, Trash2, FileText, Download } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
 import { Button } from '@/components/ui/button';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { Card, CardContent } from '@/components/ui/card';
+import MeetingMinutesForm from './MeetingMinutesForm';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 const MeetingMinutesSection: React.FC = () => {
   const { user } = useAuth();
-  const canManageMinutes = user?.role === 'admin' || user?.role === 'director';
-  
-  const { data: minutes, isLoading } = useQuery({
+  const isAdmin = user?.role === 'admin';
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingMinute, setEditingMinute] = useState<any>(null);
+  const [viewContent, setViewContent] = useState<any>(null);
+  const queryClient = useQueryClient();
+
+  const { data: meetingMinutes, isLoading } = useQuery({
     queryKey: ['meetingMinutes'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('meeting_minutes')
-        .select(`
-          *,
-          creator:created_by (
-            email,
-            user_metadata->name
-          )
-        `)
+        .select('*')
         .order('meeting_date', { ascending: false });
 
-      if (error) throw error;
-      
-      return data.map((minute: any) => ({
-        ...minute,
-        creatorName: minute.creator?.user_metadata?.name || minute.creator?.email?.split('@')[0] || 'Usuário',
-      }));
+      if (error) {
+        throw error;
+      }
+      return data || [];
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('meeting_minutes').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetingMinutes'] });
+      toast.success('Ata removida com sucesso!');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover ata: ${error.message}`);
+    },
+  });
+
+  const handleEdit = (minute: any) => {
+    setEditingMinute(minute);
+    setIsFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setTimeout(() => {
+      setEditingMinute(null);
+    }, 100);
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    } catch (e) {
+      return dateString;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -51,14 +95,6 @@ const MeetingMinutesSection: React.FC = () => {
     );
   }
 
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('pt-BR');
-    } catch (error) {
-      return dateString;
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -68,12 +104,12 @@ const MeetingMinutesSection: React.FC = () => {
             Atas de Reunião
           </h2>
           <p className="text-gray-500 mt-1">
-            Registro das atas de reunião da associação
+            Gerenciar atas de reuniões da associação
           </p>
         </div>
-        
-        {canManageMinutes && (
+        {isAdmin && !isFormOpen && (
           <Button 
+            onClick={() => setIsFormOpen(true)}
             className="mt-4 md:mt-0"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -82,70 +118,101 @@ const MeetingMinutesSection: React.FC = () => {
         )}
       </div>
 
-      {!minutes?.length ? (
+      {isFormOpen && (
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-500">Nenhuma ata cadastrada.</p>
+          <CardContent className="pt-6">
+            <MeetingMinutesForm 
+              onClose={handleFormClose} 
+              editingMinute={editingMinute}
+            />
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {!isFormOpen && (
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {meetingMinutes && meetingMinutes.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Título</TableHead>
                     <TableHead>Data da Reunião</TableHead>
-                    <TableHead>Autor</TableHead>
-                    <TableHead>Data de Criação</TableHead>
-                    <TableHead className="w-[100px]">Ações</TableHead>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Conteúdo</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {minutes.map((minute: any) => (
+                  {meetingMinutes.map((minute) => (
                     <TableRow key={minute.id}>
-                      <TableCell className="font-medium">{minute.title}</TableCell>
                       <TableCell>{formatDate(minute.meeting_date)}</TableCell>
-                      <TableCell>{minute.creatorName}</TableCell>
-                      <TableCell>{formatDate(minute.created_at)}</TableCell>
+                      <TableCell className="font-medium">{minute.title}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0"
-                            title="Ver detalhes"
+                        {minute.document_url && (
+                          <a 
+                            href={minute.document_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center text-blue-500 hover:text-blue-700"
                           >
-                            <FileText className="h-4 w-4" />
-                            <span className="sr-only">Ver detalhes</span>
-                          </Button>
-                          
-                          {minute.document_url && (
-                            <Button
+                            <Download className="h-4 w-4 mr-1" />
+                            <span>Baixar</span>
+                          </a>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
                               size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0"
-                              title="Baixar documento"
-                              asChild
+                              onClick={() => setViewContent(minute)}
                             >
-                              <a href={minute.document_url} target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4" />
-                                <span className="sr-only">Baixar</span>
-                              </a>
+                              Ver
                             </Button>
-                          )}
-                          
-                          {canManageMinutes && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0"
-                              title="Editar"
-                            >
-                              <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Editar</span>
-                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>
+                                {viewContent?.title} - {viewContent && formatDate(viewContent.meeting_date)}
+                              </DialogTitle>
+                              <DialogDescription>
+                                Ata de reunião
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-4 whitespace-pre-wrap">
+                              {viewContent?.content}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          {isAdmin && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(minute)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  if (window.confirm('Tem certeza que deseja excluir esta ata?')) {
+                                    deleteMutation.mutate(minute.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -153,7 +220,11 @@ const MeetingMinutesSection: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            ) : (
+              <div className="p-6 text-center">
+                <p className="text-gray-500">Nenhuma ata cadastrada.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

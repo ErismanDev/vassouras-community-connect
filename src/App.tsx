@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -77,16 +78,11 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={['resident', 'admin', 'director']} />}>
                 <Route element={<DashboardLayout />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/residents" element={<ResidentsPage />} />
                   <Route path="/finance" element={<FinancePage />} />
                   <Route path="/documents" element={<DocumentsPage />} />
                   <Route path="/communication" element={<CommunicationPage />} />
                   <Route path="/requests" element={<RequestsPage />} />
-                </Route>
-              </Route>
-              
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'director']} />}>
-                <Route element={<DashboardLayout />}>
-                  <Route path="/residents" element={<ResidentsPage />} />
                 </Route>
               </Route>
               

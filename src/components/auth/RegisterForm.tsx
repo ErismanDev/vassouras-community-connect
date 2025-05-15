@@ -7,7 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Eye, EyeOff, Lock, Mail, User, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const RegisterForm: React.FC = () => {
   const [name, setName] = useState('');
@@ -15,6 +18,8 @@ const RegisterForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('resident');
+  const [isDirector, setIsDirector] = useState(false);
+  const [directorPosition, setDirectorPosition] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   
@@ -41,7 +46,65 @@ const RegisterForm: React.FC = () => {
     }
     
     try {
-      await register(name, email, password, role);
+      // Register the user with Supabase Auth
+      const { data: authData, error: authError } = await register(name, email, password, role);
+      
+      if (authError) {
+        throw authError;
+      }
+      
+      if (authData) {
+        // Create resident record linked to the user account
+        const { error: residentError } = await supabase
+          .from('residents')
+          .insert({
+            name,
+            email,
+            user_id: authData.user.id,
+            is_director: isDirector,
+            director_position: isDirector ? directorPosition : null,
+            // Add minimum required fields with default values
+            cpf: '',
+            rg: '',
+            phone: '',
+            birth_date: new Date().toISOString().split('T')[0],
+            street: '',
+            number: '',
+            neighborhood: '',
+            city: '',
+            state: '',
+            zip_code: '',
+            voter_title: '',
+            electoral_zone: '',
+            electoral_section: '',
+            id_document_url: '',
+            proof_of_residence_url: '',
+            status: 'pending'
+          });
+
+        if (residentError) {
+          console.error('Error creating resident record:', residentError);
+          toast.error('Conta criada, mas houve um erro ao registrar como morador. Por favor, atualize seu perfil.');
+        }
+        
+        // If user is a director, add to board_members table
+        if (isDirector && directorPosition) {
+          const { error: boardError } = await supabase
+            .from('board_members')
+            .insert({
+              user_id: authData.user.id,
+              position: directorPosition,
+              term_start: new Date().toISOString().split('T')[0]
+            });
+            
+          if (boardError) {
+            console.error('Error creating board member record:', boardError);
+            toast.error('Conta criada, mas houve um erro ao registrar como diretor. Por favor, contate o administrador.');
+          }
+        }
+        
+        toast.success('Registro realizado com sucesso!');
+      }
     } catch (error) {
       // Error is handled in the auth context
       console.error('Registration error:', error);
@@ -151,12 +214,40 @@ const RegisterForm: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="resident">Morador</SelectItem>
-                <SelectItem value="director">Diretor</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground">
-              Nota: Todas as contas serão verificadas antes da aprovação.
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="isDirector" 
+              checked={isDirector}
+              onCheckedChange={(checked) => setIsDirector(checked === true)}
+            />
+            <Label htmlFor="isDirector" className="cursor-pointer">
+              Sou membro da diretoria
+            </Label>
+          </div>
+          
+          {isDirector && (
+            <div className="space-y-2">
+              <Label htmlFor="directorPosition">Cargo na Diretoria</Label>
+              <Input
+                id="directorPosition"
+                type="text"
+                placeholder="Ex: Presidente, Tesoureiro, etc."
+                value={directorPosition}
+                onChange={(e) => setDirectorPosition(e.target.value)}
+                required={isDirector}
+              />
+            </div>
+          )}
+          
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex gap-2 items-start">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-amber-800">
+              Nota: Todas as contas serão verificadas antes da aprovação final. Após o cadastro, complete seu perfil com todos os dados necessários.
             </p>
           </div>
           

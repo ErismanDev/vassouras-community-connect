@@ -58,6 +58,7 @@ export type Database = {
           id: string
           photo_url: string | null
           position: string
+          resident_id: string | null
           term_end: string | null
           term_start: string
           updated_at: string | null
@@ -69,6 +70,7 @@ export type Database = {
           id?: string
           photo_url?: string | null
           position: string
+          resident_id?: string | null
           term_end?: string | null
           term_start: string
           updated_at?: string | null
@@ -80,12 +82,21 @@ export type Database = {
           id?: string
           photo_url?: string | null
           position?: string
+          resident_id?: string | null
           term_end?: string | null
           term_start?: string
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "board_members_resident_id_fkey"
+            columns: ["resident_id"]
+            isOneToOne: false
+            referencedRelation: "residents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documents: {
         Row: {
@@ -421,11 +432,13 @@ export type Database = {
           cpf: string
           created_at: string | null
           created_by: string | null
+          director_position: string | null
           electoral_section: string
           electoral_zone: string
           email: string
           id: string
           id_document_url: string
+          is_director: boolean | null
           name: string
           neighborhood: string
           number: string
@@ -435,6 +448,7 @@ export type Database = {
           state: string
           status: string
           street: string
+          user_id: string | null
           voter_title: string
           zip_code: string
         }
@@ -445,11 +459,13 @@ export type Database = {
           cpf: string
           created_at?: string | null
           created_by?: string | null
+          director_position?: string | null
           electoral_section: string
           electoral_zone: string
           email: string
           id?: string
           id_document_url: string
+          is_director?: boolean | null
           name: string
           neighborhood: string
           number: string
@@ -459,6 +475,7 @@ export type Database = {
           state: string
           status: string
           street: string
+          user_id?: string | null
           voter_title: string
           zip_code: string
         }
@@ -469,11 +486,13 @@ export type Database = {
           cpf?: string
           created_at?: string | null
           created_by?: string | null
+          director_position?: string | null
           electoral_section?: string
           electoral_zone?: string
           email?: string
           id?: string
           id_document_url?: string
+          is_director?: boolean | null
           name?: string
           neighborhood?: string
           number?: string
@@ -483,6 +502,7 @@ export type Database = {
           state?: string
           status?: string
           street?: string
+          user_id?: string | null
           voter_title?: string
           zip_code?: string
         }
@@ -568,6 +588,14 @@ export type Database = {
       }
     }
     Functions: {
+      admin_insert_fee_configuration: {
+        Args: { p_amount: number; p_start_date: string; p_description?: string }
+        Returns: string
+      }
+      bypass_insert_fee_configuration: {
+        Args: { p_amount: number; p_start_date: string; p_description?: string }
+        Returns: Json
+      }
       list_users: {
         Args: Record<PropertyKey, never>
         Returns: {
