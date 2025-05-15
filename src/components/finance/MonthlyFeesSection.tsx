@@ -14,6 +14,7 @@ import FeeReceiptBook from './fees/FeeReceiptBook';
 import BatchFeeDialog from './fees/BatchFeeDialog';
 import MarkAsPaidDialog from './fees/MarkAsPaidDialog';
 import FeeDashboard from './fees/FeeDashboard';
+import { toast } from 'sonner'; // Add this import
 
 const MonthlyFeesSection: React.FC = () => {
   const {
@@ -95,7 +96,7 @@ const MonthlyFeesSection: React.FC = () => {
         <h2 className="text-xl font-bold">Carnê de Mensalidades</h2>
       </div>
       
-      <FeeReceiptBook fees={printableFees} />
+      <FeeReceiptBook fees={printableFees as unknown as { id: string; user_name: string; reference_month: string; amount: number; due_date: string; }[]} />
     </div>
   ) : (
     <div className="space-y-6">
