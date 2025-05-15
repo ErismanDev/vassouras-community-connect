@@ -413,6 +413,81 @@ export type Database = {
         }
         Relationships: []
       }
+      residents: {
+        Row: {
+          birth_date: string
+          city: string
+          complement: string | null
+          cpf: string
+          created_at: string | null
+          created_by: string | null
+          electoral_section: string
+          electoral_zone: string
+          email: string
+          id: string
+          id_document_url: string
+          name: string
+          neighborhood: string
+          number: string
+          phone: string
+          proof_of_residence_url: string
+          rg: string
+          state: string
+          status: string
+          street: string
+          voter_title: string
+          zip_code: string
+        }
+        Insert: {
+          birth_date: string
+          city: string
+          complement?: string | null
+          cpf: string
+          created_at?: string | null
+          created_by?: string | null
+          electoral_section: string
+          electoral_zone: string
+          email: string
+          id?: string
+          id_document_url: string
+          name: string
+          neighborhood: string
+          number: string
+          phone: string
+          proof_of_residence_url: string
+          rg: string
+          state: string
+          status: string
+          street: string
+          voter_title: string
+          zip_code: string
+        }
+        Update: {
+          birth_date?: string
+          city?: string
+          complement?: string | null
+          cpf?: string
+          created_at?: string | null
+          created_by?: string | null
+          electoral_section?: string
+          electoral_zone?: string
+          email?: string
+          id?: string
+          id_document_url?: string
+          name?: string
+          neighborhood?: string
+          number?: string
+          phone?: string
+          proof_of_residence_url?: string
+          rg?: string
+          state?: string
+          status?: string
+          street?: string
+          voter_title?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
