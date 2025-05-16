@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Send } from 'lucide-react';
 
 interface NewMessageFormProps {
-  onMessageSuccess?: () => void; // Changed from onSuccess to onMessageSuccess
+  onMessageSuccess?: () => void;
 }
 
 const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => {
@@ -30,7 +30,7 @@ const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => 
             title, 
             content,
             created_by: user?.id,
-            author_name: user?.user_metadata?.name || 'Usuário',
+            author_name: user?.name || 'Usuário', // Changed from user_metadata to directly access name
           }
         ])
         .select();

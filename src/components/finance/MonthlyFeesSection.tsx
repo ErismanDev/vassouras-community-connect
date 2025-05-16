@@ -85,6 +85,15 @@ const MonthlyFeesSection: React.FC = () => {
     due_date: fee.due_date,
   })) || [];
 
+  // Handle batch generation
+  const handleBatchGeneration = () => {
+    generateMonthlyFeesBatch({
+      referenceMonth: selectedMonth || new Date(),
+      dueDate: new Date(),
+      description: "Mensalidade gerada automaticamente"
+    });
+  };
+
   return printMode ? (
     <div className="print-only space-y-6">
       <div className="flex justify-between items-center mb-4">
@@ -170,25 +179,21 @@ const MonthlyFeesSection: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* For BatchFeeDialog, we need to provide all required props */}
+      {/* Use proper props for BatchFeeDialog */}
       <BatchFeeDialog
         isOpen={isBatchDialogOpen}
         onOpenChange={setIsBatchDialogOpen}
-        batchMonth={selectedMonth || new Date()} // Provide a default value
+        batchMonth={selectedMonth || new Date()}
         setBatchMonth={(date) => setSelectedMonth(date)}
-        batchDueDate={new Date()} // Default due date
-        setBatchDueDate={() => {}} // Placeholder setter
+        batchDueDate={new Date()}
+        setBatchDueDate={() => {}}
         feeConfig={feeConfig}
         residentsCount={residents?.length || 0}
-        onSubmit={() => {}} // Placeholder onSubmit
+        onSubmit={handleBatchGeneration}
         isSubmitting={isBatchLoading}
-        onGenerate={() => generateMonthlyFeesBatch({
-          referenceMonth: selectedMonth || new Date(),
-          dueDate: new Date(),
-          description: "Mensalidade gerada automaticamente"
-        })}
       />
       
+      {/* Use the correct prop name selectedFeesCount */}
       <MarkAsPaidDialog
         isOpen={isMarkPaidDialogOpen}
         onOpenChange={setIsMarkPaidDialogOpen}

@@ -16,9 +16,9 @@ import {
 interface DatePickerProps {
   date: Date | undefined
   setDate: (date: Date | undefined) => void
-  placeholder?: string // Make placeholder optional
-  showMonthYearPicker?: boolean // Add this prop to support month year picker
-  className?: string // Support className for styling
+  placeholder?: string
+  showMonthYearPicker?: boolean
+  className?: string
 }
 
 export function DatePicker({ 
@@ -75,9 +75,8 @@ export function DatePicker({
           onSelect={handleSelect}
           initialFocus
           locale={ptBR}
-          className="pointer-events-auto" // Add pointer-events-auto for better interaction
+          className="pointer-events-auto"
           month={date || undefined}
-          year={date?.getFullYear()}
           captionLayout={showMonthYearPicker ? "buttons" : "dropdown"}
           ISOWeek
         />

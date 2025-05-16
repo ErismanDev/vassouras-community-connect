@@ -14,9 +14,20 @@ interface FeeConfig {
   created_by: string;
 }
 
+interface NewFeeConfigState {
+  amount: number;
+  startDate: Date;
+  description: string;
+}
+
 export const useFeeConfiguration = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newFeeConfig, setNewFeeConfig] = useState<NewFeeConfigState>({
+    amount: 0,
+    startDate: new Date(),
+    description: ''
+  });
   
   // Fetch fee configurations
   const { data: feeConfigs = [], isLoading } = useQuery({
@@ -42,8 +53,8 @@ export const useFeeConfiguration = () => {
   };
   
   // Create new fee configuration
-  const { mutate: createFeeConfig, isPending: isCreating } = useMutation({
-    mutationFn: async ({ amount, startDate, description }: { amount: number, startDate: Date, description: string }) => {
+  const createFeeConfigMutation = useMutation({
+    mutationFn: async ({ amount, startDate, description }: NewFeeConfigState) => {
       // End current active fee config
       const { data: currentConfig } = await supabase
         .from('fee_configuration')
@@ -88,16 +99,20 @@ export const useFeeConfiguration = () => {
   });
   
   // For current fee, use the first one with null end_date
-  const currentFee = feeConfigs.find(fee => fee.end_date === null) || (feeConfigs.length > 0 ? feeConfigs[0] : null);
+  const currentFeeConfig = feeConfigs.find(fee => fee.end_date === null) || (feeConfigs.length > 0 ? feeConfigs[0] : null);
   
   return {
     feeConfigs,
     isLoading,
-    currentFee,
+    currentFeeConfig,
     isDialogOpen,
+    setIsDialogOpen,
+    newFeeConfig,
+    setNewFeeConfig,
     openDialog,
     closeDialog,
-    createFeeConfig,
-    isCreating
+    createFeeConfig: createFeeConfigMutation.mutate,
+    createFeeConfigMutation,
+    isCreating: createFeeConfigMutation.isPending
   };
 };

@@ -8,7 +8,7 @@ import { DatePicker } from '@/components/ui/datepicker';
 interface MarkAsPaidDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedFeesCount: number; // Changed from selectedCount to selectedFeesCount
+  selectedFeesCount: number; // This is the correct property name
   paymentDate: Date;
   setPaymentDate: (date: Date) => void;
   onMarkAsPaid: () => void;
@@ -18,7 +18,7 @@ interface MarkAsPaidDialogProps {
 const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
   isOpen,
   onOpenChange,
-  selectedFeesCount, // Changed from selectedCount
+  selectedFeesCount, // Using the correct property
   paymentDate,
   setPaymentDate,
   onMarkAsPaid,

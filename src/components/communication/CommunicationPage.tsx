@@ -38,7 +38,7 @@ const CommunicationPage: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="new">
-          {/* Pass onSuccess as a properly typed prop that NewMessageForm expects */}
+          {/* Use the prop name that NewMessageForm expects */}
           <NewMessageForm onMessageSuccess={handleMessageSuccess} />
         </TabsContent>
       </Tabs>
