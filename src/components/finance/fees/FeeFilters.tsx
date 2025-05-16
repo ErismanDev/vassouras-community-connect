@@ -35,7 +35,6 @@ const FeeFilters: React.FC<FeeFiltersProps> = ({
           <div className="w-full md:w-1/3">
             <Label htmlFor="month-filter">Filtrar por Mês</Label>
             <DatePicker
-              id="month-filter"
               date={selectedMonth}
               setDate={setSelectedMonth}
               placeholder="Selecione um mês"

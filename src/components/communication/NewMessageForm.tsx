@@ -1,231 +1,119 @@
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Send } from 'lucide-react';
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+interface NewMessageFormProps {
+  onMessageSuccess?: () => void; // Changed from onSuccess to onMessageSuccess
+}
 
-const formSchema = z.object({
-  title: z.string().min(3, 'Título deve ter pelo menos 3 caracteres'),
-  content: z.string().min(10, 'Conteúdo deve ter pelo menos 10 caracteres'),
-  category: z.string().min(1, 'Selecione uma categoria'),
-  targetRoles: z.array(z.enum(['admin', 'director', 'resident'])).min(1, 'Selecione pelo menos um grupo de destinatários'),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-const NewMessageForm: React.FC = () => {
+const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '',
-      content: '',
-      category: '',
-      targetRoles: ['admin', 'director', 'resident'],
-    },
-  });
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: async (values: FormValues) => {
-      const { data, error } = await supabase.from('messages').insert({
-        title: values.title,
-        content: values.content,
-        category: values.category,
-        author_id: user?.id,
-        target_role: values.targetRoles,
-      }).select();
-
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  
+  const { mutate: createMessage, isPending } = useMutation({
+    mutationFn: async ({ title, content }: { title: string; content: string }) => {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([
+          { 
+            title, 
+            content,
+            created_by: user?.id,
+            author_name: user?.user_metadata?.name || 'Usuário',
+          }
+        ])
+        .select();
+        
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       toast.success('Comunicado enviado com sucesso!');
-      form.reset();
+      setTitle('');
+      setContent('');
+      if (onMessageSuccess) onMessageSuccess();
     },
-    onError: (error) => {
-      toast.error(`Erro ao enviar comunicado: ${(error as any).message}`);
-    },
+    onError: () => {
+      toast.error('Erro ao enviar comunicado. Tente novamente.');
+    }
   });
-
-  const onSubmit = (values: FormValues) => {
-    mutate(values);
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      toast.error('O título é obrigatório.');
+      return;
+    }
+    
+    if (!content.trim()) {
+      toast.error('O conteúdo é obrigatório.');
+      return;
+    }
+    
+    createMessage({ title, content });
   };
-
-  const categories = [
-    { label: 'Aviso', value: 'aviso' },
-    { label: 'Evento', value: 'evento' },
-    { label: 'Reunião', value: 'reuniao' },
-    { label: 'Segurança', value: 'seguranca' },
-    { label: 'Geral', value: 'geral' },
-  ];
-
-  const roles = [
-    { id: 'admin', label: 'Administradores' },
-    { id: 'director', label: 'Diretores' },
-    { id: 'resident', label: 'Moradores' },
-  ];
-
+  
   return (
     <Card>
-      <CardContent className="pt-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Digite o título do comunicado" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <CardHeader>
+        <CardTitle>Novo Comunicado</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Título</Label>
+            <Input 
+              id="title" 
+              value={title} 
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Digite o título do comunicado"
+              disabled={isPending}
             />
-
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="content">Conteúdo</Label>
+            <Textarea 
+              id="content" 
+              value={content} 
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Digite o conteúdo do comunicado"
+              className="min-h-[200px]"
+              disabled={isPending}
             />
-
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Conteúdo</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Digite o conteúdo do comunicado"
-                      className="min-h-[150px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="targetRoles"
-              render={() => (
-                <FormItem>
-                  <div className="mb-4">
-                    <FormLabel>Destinatários</FormLabel>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {roles.map((role) => (
-                      <FormField
-                        key={role.id}
-                        control={form.control}
-                        name="targetRoles"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={role.id}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(role.id as any)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value, role.id])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== role.id
-                                          )
-                                        )
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {role.label}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button 
-              type="submit" 
-              disabled={isPending} 
-              className="w-full md:w-auto"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Enviar Comunicado
-                </>
-              )}
-            </Button>
-          </form>
-        </Form>
+          </div>
+          
+          <Button 
+            type="submit" 
+            disabled={isPending}
+            className="w-full"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Enviar Comunicado
+              </>
+            )}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );

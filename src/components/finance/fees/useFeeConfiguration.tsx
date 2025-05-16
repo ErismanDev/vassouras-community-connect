@@ -1,11 +1,10 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext';
 
-export interface FeeConfig {
+interface FeeConfig {
   id: string;
   amount: number;
   start_date: string;
@@ -17,118 +16,88 @@ export interface FeeConfig {
 
 export const useFeeConfiguration = () => {
   const queryClient = useQueryClient();
-  const { user, session } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newFeeConfig, setNewFeeConfig] = useState({
-    amount: '',
-    start_date: new Date(),
-    description: ''
-  });
   
   // Fetch fee configurations
-  const { data: feeConfigs, isLoading } = useQuery({
+  const { data: feeConfigs = [], isLoading } = useQuery({
     queryKey: ['feeConfigs'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fee_configuration')
         .select('*')
         .order('start_date', { ascending: false });
+        
+      if (error) throw error;
       
-      if (error) {
-        console.error('Error fetching fee configs:', error);
-        throw error;
-      }
       return data as FeeConfig[];
-    },
-    retry: 1
+    }
   });
   
-  // Create fee configuration mutation
-  const createFeeConfigMutation = useMutation({
-    mutationFn: async (feeConfig: typeof newFeeConfig) => {
-      // Verificar se o usuário está autenticado
-      if (!user) {
-        throw new Error('Você precisa estar autenticado para atualizar configurações de mensalidades');
-      }
-
-      // Atualizar a configuração ativa, se existir
-      const { data: activeConfig, error: findError } = await supabase
+  const openDialog = () => {
+    setIsDialogOpen(true);
+  };
+  
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+  };
+  
+  // Create new fee configuration
+  const { mutate: createFeeConfig, isPending: isCreating } = useMutation({
+    mutationFn: async ({ amount, startDate, description }: { amount: number, startDate: Date, description: string }) => {
+      // End current active fee config
+      const { data: currentConfig } = await supabase
         .from('fee_configuration')
-        .select('id')
+        .select('*')
         .is('end_date', null)
-        .single();
-
-      if (findError && findError.code !== 'PGRST116') { // Not found is ok
-        throw findError;
-      }
-
-      if (activeConfig) {
-        const { error: updateError } = await supabase
+        .order('start_date', { ascending: false })
+        .limit(1);
+      
+      if (currentConfig && currentConfig.length > 0) {
+        await supabase
           .from('fee_configuration')
-          .update({ end_date: format(new Date(feeConfig.start_date), 'yyyy-MM-dd') })
-          .eq('id', activeConfig.id);
-
-        if (updateError) {
-          throw updateError;
-        }
+          .update({ end_date: startDate.toISOString().split('T')[0] })
+          .eq('id', currentConfig[0].id);
       }
-
-      // Inserir nova configuração de mensalidade
+      
+      // Create new fee config
       const { data, error } = await supabase
         .from('fee_configuration')
         .insert([
           {
-            amount: parseFloat(feeConfig.amount),
-            start_date: format(feeConfig.start_date, 'yyyy-MM-dd'),
-            description: feeConfig.description
-            // Não envia created_by, user_id, owner_id, auth_id
+            amount: amount,
+            start_date: startDate.toISOString().split('T')[0],
+            end_date: null,
+            description: description
           }
         ])
         .select();
-
-      if (error) {
-        throw error;
-      }
-
+        
+      if (error) throw error;
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feeConfigs'] });
-      setIsDialogOpen(false);
-      setNewFeeConfig({
-        amount: '',
-        start_date: new Date(),
-        description: ''
-      });
-      toast.success('Valor de mensalidade atualizado com sucesso!');
+      toast.success('Valor da mensalidade atualizado com sucesso!');
+      closeDialog();
     },
-    onError: (error: any) => {
-      console.error('Error creating fee config:', error);
-      let errorMsg = 'Erro ao atualizar valor da mensalidade.';
-      
-      if (error.message) {
-        if (error.message.includes('row-level security policy')) {
-          errorMsg += ' Você não tem permissão para esta operação. Verifique se você está logado como administrador.';
-        } else {
-          errorMsg += ' ' + error.message;
-        }
-      }
-      
-      toast.error(errorMsg);
+    onError: (error) => {
+      console.error('Error updating fee configuration:', error);
+      toast.error('Erro ao atualizar valor da mensalidade.');
     }
   });
   
-  // Get current fee configuration
-  const currentFeeConfig = feeConfigs?.find(config => config.end_date === null);
-
+  // For current fee, use the first one with null end_date
+  const currentFee = feeConfigs.find(fee => fee.end_date === null) || (feeConfigs.length > 0 ? feeConfigs[0] : null);
+  
   return {
     feeConfigs,
     isLoading,
+    currentFee,
     isDialogOpen,
-    setIsDialogOpen,
-    newFeeConfig,
-    setNewFeeConfig,
-    createFeeConfigMutation,
-    currentFeeConfig
+    openDialog,
+    closeDialog,
+    createFeeConfig,
+    isCreating
   };
 };

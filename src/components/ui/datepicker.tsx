@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
@@ -15,9 +16,18 @@ import {
 interface DatePickerProps {
   date: Date | undefined
   setDate: (date: Date | undefined) => void
+  placeholder?: string // Make placeholder optional
+  showMonthYearPicker?: boolean // Add this prop to support month year picker
+  className?: string // Support className for styling
 }
 
-export function DatePicker({ date, setDate }: DatePickerProps) {
+export function DatePicker({ 
+  date, 
+  setDate, 
+  placeholder = "Selecione uma data",
+  showMonthYearPicker = false,
+  className
+}: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   
   // Função para lidar com a seleção de datas de forma segura
@@ -50,11 +60,12 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            !date && "text-muted-foreground",
+            className
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
+          {date ? format(date, showMonthYearPicker ? "MMMM yyyy" : "PPP", { locale: ptBR }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
@@ -64,6 +75,11 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
           onSelect={handleSelect}
           initialFocus
           locale={ptBR}
+          className="pointer-events-auto" // Add pointer-events-auto for better interaction
+          month={date || undefined}
+          year={date?.getFullYear()}
+          captionLayout={showMonthYearPicker ? "buttons" : "dropdown"}
+          ISOWeek
         />
       </PopoverContent>
     </Popover>

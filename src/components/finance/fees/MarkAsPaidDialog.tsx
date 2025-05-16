@@ -8,38 +8,35 @@ import { DatePicker } from '@/components/ui/datepicker';
 interface MarkAsPaidDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedFeesCount: number;
+  selectedFeesCount: number; // Changed from selectedCount to selectedFeesCount
   paymentDate: Date;
   setPaymentDate: (date: Date) => void;
-  onSubmit: () => void;
-  isSubmitting: boolean;
+  onMarkAsPaid: () => void;
+  isLoading: boolean;
 }
 
 const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
   isOpen,
   onOpenChange,
-  selectedFeesCount,
+  selectedFeesCount, // Changed from selectedCount
   paymentDate,
   setPaymentDate,
-  onSubmit,
-  isSubmitting
+  onMarkAsPaid,
+  isLoading
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Registrar Pagamentos</DialogTitle>
+          <DialogTitle>Marcar como Pago</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Mensalidades Selecionadas</Label>
-            <p className="text-sm">
-              {selectedFeesCount} mensalidades serão marcadas como pagas.
-            </p>
-          </div>
+        <div className="py-4 space-y-4">
+          <p>
+            Você está prestes a marcar <strong>{selectedFeesCount}</strong> mensalidade(s) como paga(s).
+          </p>
           
           <div className="space-y-2">
-            <Label htmlFor="payment-date">Data de Pagamento</Label>
+            <Label htmlFor="payment-date">Data do Pagamento</Label>
             <DatePicker
               date={paymentDate}
               setDate={(date) => date && setPaymentDate(date)}
@@ -47,15 +44,18 @@ const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
           <Button 
-            type="button"
-            onClick={onSubmit}
-            disabled={isSubmitting || selectedFeesCount === 0}
+            onClick={onMarkAsPaid}
+            disabled={isLoading}
           >
-            {isSubmitting ? 'Registrando...' : 'Confirmar Pagamentos'}
+            {isLoading ? 'Processando...' : 'Confirmar Pagamento'}
           </Button>
         </DialogFooter>
       </DialogContent>

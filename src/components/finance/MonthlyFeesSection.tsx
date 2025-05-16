@@ -17,6 +17,9 @@ import FeeDashboard from './fees/FeeDashboard';
 import { ptBR } from 'date-fns/locale';
 import { format } from 'date-fns';
 
+// Import the useFeeConfiguration hook to get the fee history
+import { useFeeConfiguration } from './fees/useFeeConfiguration';
+
 const MonthlyFeesSection: React.FC = () => {
   const {
     monthlyFees,
@@ -51,6 +54,9 @@ const MonthlyFeesSection: React.FC = () => {
     isBatchLoading
   } = useMonthlyFees();
   
+  // Use the fee configuration hook to get fee history
+  const { feeConfigs, isLoading: isLoadingFeeConfigs, openDialog } = useFeeConfiguration();
+  
   const [activeTab, setActiveTab] = useState('dashboard');
   const [printMode, setPrintMode] = useState(false);
   
@@ -77,7 +83,7 @@ const MonthlyFeesSection: React.FC = () => {
     reference_month: format(new Date(fee.reference_month), 'MMMM yyyy', { locale: ptBR }),
     amount: fee.amount,
     due_date: fee.due_date,
-  }));
+  })) || [];
 
   return printMode ? (
     <div className="print-only space-y-6">
@@ -87,7 +93,7 @@ const MonthlyFeesSection: React.FC = () => {
       </div>
       
       <FeeReceiptBook 
-        fees={printableFees || []} 
+        fees={printableFees} 
       />
     </div>
   ) : (
@@ -135,8 +141,14 @@ const MonthlyFeesSection: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="history">
-          <CurrentFeeCard feeConfig={feeConfig} />
-          <FeeHistoryTable />
+          <CurrentFeeCard 
+            currentFeeConfig={feeConfig} 
+            onOpenDialog={openDialog} 
+          />
+          <FeeHistoryTable 
+            feeConfigs={feeConfigs} 
+            isLoading={isLoadingFeeConfigs} 
+          />
         </TabsContent>
         
         <TabsContent value="receipts">
@@ -157,18 +169,30 @@ const MonthlyFeesSection: React.FC = () => {
           </p>
         </TabsContent>
       </Tabs>
-      
+
+      {/* For BatchFeeDialog, we need to provide all required props */}
       <BatchFeeDialog
         isOpen={isBatchDialogOpen}
         onOpenChange={setIsBatchDialogOpen}
-        onGenerate={generateMonthlyFeesBatch}
-        isLoading={isBatchLoading}
+        batchMonth={selectedMonth || new Date()} // Provide a default value
+        setBatchMonth={(date) => setSelectedMonth(date)}
+        batchDueDate={new Date()} // Default due date
+        setBatchDueDate={() => {}} // Placeholder setter
+        feeConfig={feeConfig}
+        residentsCount={residents?.length || 0}
+        onSubmit={() => {}} // Placeholder onSubmit
+        isSubmitting={isBatchLoading}
+        onGenerate={() => generateMonthlyFeesBatch({
+          referenceMonth: selectedMonth || new Date(),
+          dueDate: new Date(),
+          description: "Mensalidade gerada automaticamente"
+        })}
       />
       
       <MarkAsPaidDialog
         isOpen={isMarkPaidDialogOpen}
         onOpenChange={setIsMarkPaidDialogOpen}
-        selectedCount={selectedFees.length}
+        selectedFeesCount={selectedFees.length}
         paymentDate={paymentDate}
         setPaymentDate={setPaymentDate}
         onMarkAsPaid={handleMarkAsPaid}

@@ -17,6 +17,7 @@ interface BatchFeeDialogProps {
   residentsCount: number;
   onSubmit: () => void;
   isSubmitting: boolean;
+  onGenerate?: () => void; // Add this optional prop
 }
 
 const BatchFeeDialog: React.FC<BatchFeeDialogProps> = ({
@@ -29,8 +30,12 @@ const BatchFeeDialog: React.FC<BatchFeeDialogProps> = ({
   feeConfig,
   residentsCount,
   onSubmit,
-  isSubmitting
+  isSubmitting,
+  onGenerate // This can now be used in place of onSubmit if provided
 }) => {
+  // Use onGenerate if provided, otherwise fall back to onSubmit
+  const handleGenerate = onGenerate || onSubmit;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -79,7 +84,7 @@ const BatchFeeDialog: React.FC<BatchFeeDialogProps> = ({
           </Button>
           <Button 
             type="button"
-            onClick={onSubmit}
+            onClick={handleGenerate} // Use the chosen handler
             disabled={isSubmitting || !residentsCount || !feeConfig}
           >
             {isSubmitting ? 'Gerando...' : 'Gerar Mensalidades'}

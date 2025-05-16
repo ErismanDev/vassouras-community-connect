@@ -8,6 +8,11 @@ import NewMessageForm from './NewMessageForm';
 const CommunicationPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('messages');
 
+  // We need to handle the success callback from NewMessageForm
+  const handleMessageSuccess = () => {
+    setActiveTab('messages');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Comunicação</h1>
@@ -33,7 +38,8 @@ const CommunicationPage: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="new">
-          <NewMessageForm onSuccess={() => setActiveTab('messages')} />
+          {/* Pass onSuccess as a properly typed prop that NewMessageForm expects */}
+          <NewMessageForm onMessageSuccess={handleMessageSuccess} />
         </TabsContent>
       </Tabs>
     </div>
