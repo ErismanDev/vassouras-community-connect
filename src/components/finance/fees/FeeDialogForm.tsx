@@ -1,5 +1,5 @@
+
 import React from 'react';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,8 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FeeFormState {
-  amount: string;
-  start_date: Date;
+  amount: number;
+  startDate: Date; // Changed from start_date to startDate to match useFeeConfiguration
   description: string;
 }
 
@@ -57,15 +57,15 @@ const FeeDialogForm: React.FC<FeeDialogFormProps> = ({
               step="0.01"
               placeholder="0.00"
               value={feeFormState.amount}
-              onChange={(e) => setFeeFormState({...feeFormState, amount: e.target.value})}
+              onChange={(e) => setFeeFormState({...feeFormState, amount: Number(e.target.value)})}
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="fee-start-date">Data de Início</Label>
             <DatePicker
-              date={feeFormState.start_date}
-              setDate={(date) => date && setFeeFormState({...feeFormState, start_date: date})}
+              date={feeFormState.startDate}
+              setDate={(date) => date && setFeeFormState({...feeFormState, startDate: date})}
             />
             <p className="text-sm text-muted-foreground">
               A partir desta data, o valor atual será substituído pelo novo valor.

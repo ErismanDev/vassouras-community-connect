@@ -14,9 +14,10 @@ interface FeeConfig {
   created_by: string;
 }
 
+// This interface needs to match FeeFormState in FeeDialogForm.tsx
 interface NewFeeConfigState {
   amount: number;
-  startDate: Date;
+  startDate: Date;  // Using startDate consistently
   description: string;
 }
 
