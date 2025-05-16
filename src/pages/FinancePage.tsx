@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import TransactionsSection from '@/components/finance/TransactionsSection';
@@ -16,14 +17,14 @@ const FinancePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('transactions');
   const [isPageLoading, setIsPageLoading] = useState(true);
 
-  // Adiciona um estado de carregamento para garantir que os componentes não renderizem até que o papel do usuário seja determinado
+  // Add loading state to ensure user role is determined
   useEffect(() => {
     if (user !== undefined) {
       setIsPageLoading(false);
     }
   }, [user]);
 
-  // Redireciona para a aba de transações se o usuário tentar acessar config sem ser admin
+  // Redirect to transactions tab if user tries to access config without admin rights
   useEffect(() => {
     if (activeTab === 'config' && !isAdmin) {
       setActiveTab('transactions');
@@ -39,7 +40,7 @@ const FinancePage: React.FC = () => {
     );
   }
   
-  // Verifica se o usuário está autenticado
+  // Check if user is authenticated
   if (!user || !session) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -70,23 +71,23 @@ const FinancePage: React.FC = () => {
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="transactions">
+        <TabsContent value="transactions" className="relative z-10">
           <TransactionsSection isAdmin={isAdminOrDirector || false} />
         </TabsContent>
         
         {isAdminOrDirector && (
-          <TabsContent value="fees">
+          <TabsContent value="fees" className="relative z-10">
             <MonthlyFeesSection />
           </TabsContent>
         )}
         
         {isAdmin && (
-          <TabsContent value="config">
+          <TabsContent value="config" className="relative z-10">
             <FeeConfigurationSection />
           </TabsContent>
         )}
         
-        <TabsContent value="reports">
+        <TabsContent value="reports" className="relative z-10">
           <FinancialReportsSection isAdmin={isAdminOrDirector || false} />
         </TabsContent>
       </Tabs>

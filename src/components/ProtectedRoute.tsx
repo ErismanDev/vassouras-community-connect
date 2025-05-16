@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth, UserRole } from '../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -15,8 +16,41 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
+  const [roleVerified, setRoleVerified] = useState<boolean | null>(null);
+  const [isVerifying, setIsVerifying] = useState(true);
 
-  if (loading) {
+  // Check role from auth.users metadata (avoiding RLS policies with infinite recursion)
+  useEffect(() => {
+    const verifyUserRole = async () => {
+      if (!isAuthenticated || !user) {
+        setRoleVerified(false);
+        setIsVerifying(false);
+        return;
+      }
+
+      // If no specific roles are required, or if we don't need to check roles
+      if (!allowedRoles || allowedRoles.length === 0) {
+        setRoleVerified(true);
+        setIsVerifying(false);
+        return;
+      }
+
+      try {
+        // Use user.role from AuthContext that was already loaded from user metadata
+        const hasAllowedRole = allowedRoles.includes(user.role);
+        setRoleVerified(hasAllowedRole);
+      } catch (error) {
+        console.error("Error verifying user role:", error);
+        setRoleVerified(false);
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyUserRole();
+  }, [isAuthenticated, user, allowedRoles]);
+
+  if (loading || isVerifying) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-association-primary" />
@@ -31,7 +65,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check if user has required role
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && roleVerified === false) {
     // Redirect to unauthorized if user doesn't have required role
     return <Navigate to="/unauthorized" replace />;
   }

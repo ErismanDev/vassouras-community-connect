@@ -1,20 +1,21 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useMonthlyFees } from './fees/useMonthlyFees';
+import { toast } from 'sonner';
+import FeeTable from './fees/FeeTable';
+import FeeFilters from './fees/FeeFilters';
+import FeeActionsBar from './fees/FeeActionsBar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/datepicker';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { format, addMonths, startOfMonth } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useMonthlyFees, MonthlyFee } from './fees/useMonthlyFees';
+import { PrinterIcon } from 'lucide-react';
+import CurrentFeeCard from './fees/CurrentFeeCard';
+import FeeHistoryTable from './fees/FeeHistoryTable';
 import FeeReceiptBook from './fees/FeeReceiptBook';
 import BatchFeeDialog from './fees/BatchFeeDialog';
 import MarkAsPaidDialog from './fees/MarkAsPaidDialog';
 import FeeDashboard from './fees/FeeDashboard';
-import { toast } from 'sonner'; // Add this import
+import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
 
 const MonthlyFeesSection: React.FC = () => {
   const {
@@ -44,64 +45,54 @@ const MonthlyFeesSection: React.FC = () => {
     selectAllPendingFees,
     clearSelection,
     resetFilters,
-    
-    // Batch fee generation
     isBatchDialogOpen,
     setIsBatchDialogOpen,
-    batchMonth,
-    setBatchMonth,
-    batchDueDate,
-    setBatchDueDate,
-    batchFeeMutation
+    generateMonthlyFeesBatch,
+    isBatchLoading
   } = useMonthlyFees();
   
-  // State for showing receipt book
-  const [showReceiptBook, setShowReceiptBook] = useState(false);
-  const [printableFees, setPrintableFees] = useState<MonthlyFee[]>([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [printMode, setPrintMode] = useState(false);
   
-  // Handle generating receipt book
-  const handleGenerateReceiptBook = () => {
-    if (!monthlyFees) return;
-    
-    // Use selected fees or all pending fees
-    const feesToPrint = selectedFees.length > 0
-      ? monthlyFees.filter(fee => selectedFees.includes(fee.id))
-      : monthlyFees.filter(fee => fee.status === 'pending');
-    
-    if (feesToPrint.length === 0) {
-      toast.error('Selecione ao menos uma mensalidade para gerar o carnê.');
+  const handleMarkAsPaid = () => {
+    if (selectedFees.length === 0) {
+      toast.error('Selecione pelo menos uma mensalidade para marcar como paga.');
       return;
     }
     
-    setPrintableFees(feesToPrint);
-    setShowReceiptBook(true);
+    markFeesAsPaidMutation.mutate({ 
+      feeIds: selectedFees,
+      paymentDate 
+    });
   };
   
-  // Handle marking selected fees as paid
-  const handleMarkAsPaid = () => {
-    if (selectedFees.length > 0) {
-      markFeesAsPaidMutation.mutate({
-        feeIds: selectedFees,
-        paymentDate
-      });
-    }
+  const openBatchDialog = () => {
+    setIsBatchDialogOpen(true);
   };
+  
+  // Prepare receipt data
+  const printableFees = monthlyFees?.map(fee => ({
+    id: fee.id,
+    user_name: fee.user_name || 'Desconhecido',
+    reference_month: format(new Date(fee.reference_month), 'MMMM yyyy', { locale: ptBR }),
+    amount: fee.amount,
+    due_date: fee.due_date,
+  }));
 
-  return showReceiptBook ? (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <Button variant="outline" onClick={() => setShowReceiptBook(false)}>
-          Voltar para Mensalidades
-        </Button>
+  return printMode ? (
+    <div className="print-only space-y-6">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Carnê de Mensalidades</h2>
+        <Button variant="ghost" onClick={() => setPrintMode(false)}>Voltar</Button>
       </div>
       
-      <FeeReceiptBook fees={printableFees as unknown as { id: string; user_name: string; reference_month: string; amount: number; due_date: string; }[]} />
+      <FeeReceiptBook 
+        fees={printableFees || []} 
+      />
     </div>
   ) : (
     <div className="space-y-6">
-      {/* Dashboard Cards */}
-      <FeeDashboard 
+      <FeeDashboard
         totalFees={totalFees}
         totalAmount={totalAmount}
         paidFees={paidFees}
@@ -110,175 +101,78 @@ const MonthlyFeesSection: React.FC = () => {
         overdueFees={overdueFees}
       />
       
-      {/* Filters and Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="w-40">
-            <Label className="mb-1 block">Mês de Referência</Label>
-            <DatePicker
-              date={selectedMonth}
-              setDate={setSelectedMonth}
-            />
-          </div>
-          <div className="w-36">
-            <Label className="mb-1 block">Status</Label>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">Pendentes</SelectItem>
-                <SelectItem value="paid">Pagas</SelectItem>
-                <SelectItem value="overdue">Atrasadas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button variant="outline" onClick={resetFilters} className="mt-6">
-            Limpar Filtros
-          </Button>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="dashboard">Gestão de Mensalidades</TabsTrigger>
+          <TabsTrigger value="history">Histórico de Valores</TabsTrigger>
+          <TabsTrigger value="receipts">Carnês</TabsTrigger>
+        </TabsList>
         
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button onClick={() => setIsBatchDialogOpen(true)}>
-            Gerar Mensalidades em Lote
-          </Button>
-        </div>
-      </div>
-      
-      {/* Fees Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedFees.length > 0 && selectedFees.length === monthlyFees?.filter(f => f.status === 'pending').length}
-                      onChange={() => {
-                        if (selectedFees.length > 0) {
-                          clearSelection();
-                        } else {
-                          selectAllPendingFees();
-                        }
-                      }}
-                      className="rounded border-gray-300"
-                    />
-                  </TableHead>
-                  <TableHead>Morador</TableHead>
-                  <TableHead>Mês Ref.</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Pagamento</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
-                      Carregando mensalidades...
-                    </TableCell>
-                  </TableRow>
-                ) : !monthlyFees || monthlyFees.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
-                      Nenhuma mensalidade encontrada.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  monthlyFees.map((fee) => (
-                    <TableRow key={fee.id}>
-                      <TableCell>
-                        {fee.status === 'pending' && (
-                          <input 
-                            type="checkbox" 
-                            checked={selectedFees.includes(fee.id)}
-                            onChange={() => toggleFeeSelection(fee.id)}
-                            className="rounded border-gray-300"
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>{fee.user_name}</TableCell>
-                      <TableCell>
-                        {format(new Date(fee.reference_month), 'MMM yyyy', { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>
-                        R$ {Number(fee.amount).toFixed(2).replace('.', ',')}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(fee.due_date), 'dd/MM/yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        {fee.payment_date ? format(new Date(fee.payment_date), 'dd/MM/yyyy') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            fee.status === 'paid' ? 'default' : 
-                            fee.status === 'pending' ? 'outline' : 
-                            'destructive'
-                          }
-                        >
-                          {fee.status === 'paid' ? 'Paga' : 
-                           fee.status === 'pending' ? 'Pendente' : 
-                           'Atrasada'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Selected Fees Actions */}
-      {selectedFees.length > 0 && (
-        <div className="flex justify-between items-center bg-muted p-4 rounded-md">
-          <div>
-            <p className="font-medium">{selectedFees.length} mensalidades selecionadas</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={clearSelection}>
-              Limpar Seleção
-            </Button>
-            <Button variant="outline" onClick={handleGenerateReceiptBook}>
-              Gerar Carnê
-            </Button>
-            <Button onClick={() => setIsMarkPaidDialogOpen(true)}>
-              Registrar Pagamentos
+        <TabsContent value="dashboard" className="space-y-6">
+          <FeeFilters
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
+            resetFilters={resetFilters}
+          />
+          
+          <FeeActionsBar
+            selectedFees={selectedFees}
+            clearSelection={clearSelection}
+            setIsMarkPaidDialogOpen={setIsMarkPaidDialogOpen}
+            openBatchDialog={openBatchDialog}
+            selectedStatus={selectedStatus}
+            isBatchLoading={isBatchLoading}
+          />
+          
+          <FeeTable
+            isLoading={isLoading}
+            monthlyFees={monthlyFees}
+            selectedFees={selectedFees}
+            toggleFeeSelection={toggleFeeSelection}
+          />
+        </TabsContent>
+        
+        <TabsContent value="history">
+          <CurrentFeeCard feeConfig={feeConfig} />
+          <FeeHistoryTable />
+        </TabsContent>
+        
+        <TabsContent value="receipts">
+          <div className="flex justify-between mb-6">
+            <h3 className="text-lg font-medium">Carnês de Mensalidades</h3>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => setPrintMode(true)}
+            >
+              <PrinterIcon className="h-4 w-4" />
+              Imprimir Carnês
             </Button>
           </div>
-        </div>
-      )}
+          
+          <p className="text-muted-foreground mb-4">
+            Clique em "Imprimir Carnês" para gerar uma versão para impressão dos carnês de mensalidade.
+          </p>
+        </TabsContent>
+      </Tabs>
       
-      {/* Batch Generate Dialog */}
-      <BatchFeeDialog 
+      <BatchFeeDialog
         isOpen={isBatchDialogOpen}
         onOpenChange={setIsBatchDialogOpen}
-        batchMonth={batchMonth}
-        setBatchMonth={setBatchMonth}
-        batchDueDate={batchDueDate}
-        setBatchDueDate={setBatchDueDate}
-        feeConfig={feeConfig}
-        residentsCount={residents?.length || 0}
-        onSubmit={() => batchFeeMutation.mutate()}
-        isSubmitting={batchFeeMutation.isPending}
+        onGenerate={generateMonthlyFeesBatch}
+        isLoading={isBatchLoading}
       />
       
-      {/* Mark as Paid Dialog */}
-      <MarkAsPaidDialog 
+      <MarkAsPaidDialog
         isOpen={isMarkPaidDialogOpen}
         onOpenChange={setIsMarkPaidDialogOpen}
-        selectedFeesCount={selectedFees.length}
+        selectedCount={selectedFees.length}
         paymentDate={paymentDate}
         setPaymentDate={setPaymentDate}
-        onSubmit={handleMarkAsPaid}
-        isSubmitting={markFeesAsPaidMutation.isPending}
+        onMarkAsPaid={handleMarkAsPaid}
+        isLoading={markFeesAsPaidMutation.isPending}
       />
     </div>
   );

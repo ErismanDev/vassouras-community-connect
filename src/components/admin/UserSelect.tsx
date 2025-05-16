@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
@@ -31,7 +33,7 @@ export default function UserSelect({ value, onChange, onUserDataChange }: UserSe
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserName, setSelectedUserName] = useState<string>('');
   
-  // Referência para verificar se o componente ainda está montado
+  // Create a reference to check if component is mounted
   const isMounted = React.useRef(true);
   
   React.useEffect(() => {
@@ -57,6 +59,7 @@ export default function UserSelect({ value, onChange, onUserDataChange }: UserSe
           console.error('Erro ao buscar usuários:', error);
           if (isMounted.current) {
             setError('Não foi possível carregar a lista de usuários.');
+            toast.error('Erro ao carregar usuários. Tente novamente mais tarde.');
           }
           return;
         }
@@ -121,7 +124,7 @@ export default function UserSelect({ value, onChange, onUserDataChange }: UserSe
       });
     }
     
-    // Fechar o popover com um timeout para evitar problemas de desmontagem
+    // Close the popover with a timeout to avoid unmounting issues
     setTimeout(() => {
       if (isMounted.current) {
         setOpen(false);
@@ -209,4 +212,4 @@ export default function UserSelect({ value, onChange, onUserDataChange }: UserSe
       </PopoverContent>
     </Popover>
   );
-} 
+}

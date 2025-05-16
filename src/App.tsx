@@ -22,6 +22,7 @@ import { Toaster } from './components/ui/sonner';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import { AuthProvider } from './contexts/AuthContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -32,36 +33,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// Error Boundary simples
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: any) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: any, errorInfo: any) {
-    // Você pode logar o erro em um serviço externo aqui
-    console.error('Erro capturado pelo ErrorBoundary:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: 32, textAlign: 'center' }}>
-          <h1>Ocorreu um erro inesperado.</h1>
-          <pre style={{ color: 'red', marginTop: 16 }}>{String(this.state.error)}</pre>
-          <p>Tente recarregar a página ou entre em contato com o suporte.</p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 function App() {
   return (
@@ -77,18 +48,46 @@ function App() {
               
               <Route element={<ProtectedRoute allowedRoles={['resident', 'admin', 'director']} />}>
                 <Route element={<DashboardLayout />}>
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/residents" element={<ResidentsPage />} />
-                  <Route path="/finance" element={<FinancePage />} />
-                  <Route path="/documents" element={<DocumentsPage />} />
-                  <Route path="/communication" element={<CommunicationPage />} />
-                  <Route path="/requests" element={<RequestsPage />} />
+                  <Route path="/dashboard" element={
+                    <ErrorBoundary>
+                      <DashboardPage />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/residents" element={
+                    <ErrorBoundary>
+                      <ResidentsPage />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/finance" element={
+                    <ErrorBoundary>
+                      <FinancePage />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/documents" element={
+                    <ErrorBoundary>
+                      <DocumentsPage />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/communication" element={
+                    <ErrorBoundary>
+                      <CommunicationPage />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/requests" element={
+                    <ErrorBoundary>
+                      <RequestsPage />
+                    </ErrorBoundary>
+                  } />
                 </Route>
               </Route>
               
               <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                 <Route element={<DashboardLayout />}>
-                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/admin" element={
+                    <ErrorBoundary>
+                      <AdminPage />
+                    </ErrorBoundary>
+                  } />
                 </Route>
               </Route>
               
