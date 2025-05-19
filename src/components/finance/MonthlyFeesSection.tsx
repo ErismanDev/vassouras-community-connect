@@ -85,12 +85,14 @@ const MonthlyFeesSection: React.FC = () => {
     due_date: fee.due_date,
   })) || [];
 
-  // Handle batch generation
-  const handleBatchGeneration = () => {
+  // Handle batch generation with support for all months
+  const handleBatchGeneration = (options: { generateAllMonths: boolean, amount?: number }) => {
     generateMonthlyFeesBatch({
       referenceMonth: selectedMonth || new Date(),
-      dueDate: new Date(),
-      description: "Mensalidade gerada automaticamente"
+      dueDate: paymentDate,
+      description: "Mensalidade gerada automaticamente",
+      generateAllMonths: options.generateAllMonths,
+      customAmount: options.amount
     });
   };
 
@@ -179,21 +181,20 @@ const MonthlyFeesSection: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Use proper props for BatchFeeDialog */}
       <BatchFeeDialog
         isOpen={isBatchDialogOpen}
         onOpenChange={setIsBatchDialogOpen}
         batchMonth={selectedMonth || new Date()}
         setBatchMonth={(date) => setSelectedMonth(date)}
-        batchDueDate={new Date()}
-        setBatchDueDate={() => {}}
+        batchDueDate={paymentDate}
+        setBatchDueDate={setPaymentDate}
         feeConfig={feeConfig}
         residentsCount={residents?.length || 0}
-        onSubmit={handleBatchGeneration}
+        onSubmit={() => handleBatchGeneration({ generateAllMonths: false })}
         isSubmitting={isBatchLoading}
+        onGenerate={handleBatchGeneration}
       />
       
-      {/* Use the correct prop name selectedFeesCount */}
       <MarkAsPaidDialog
         isOpen={isMarkPaidDialogOpen}
         onOpenChange={setIsMarkPaidDialogOpen}
