@@ -597,11 +597,18 @@ export type Database = {
         Returns: Json
       }
       generate_monthly_fees_batch: {
-        Args: {
-          p_reference_month: string
-          p_due_date: string
-          p_description?: string
-        }
+        Args:
+          | {
+              p_reference_month: string
+              p_due_date: string
+              p_description?: string
+            }
+          | {
+              p_reference_month: string
+              p_due_date: string
+              p_description?: string
+              p_custom_amount?: number
+            }
         Returns: {
           inserted_count: number
           total_amount: number
