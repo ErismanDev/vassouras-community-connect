@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Send } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface NewMessageFormProps {
   onMessageSuccess?: () => void;
@@ -20,22 +21,33 @@ const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => 
   const queryClient = useQueryClient();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [category, setCategory] = useState('geral');
   
   const { mutate: createMessage, isPending } = useMutation({
-    mutationFn: async ({ title, content }: { title: string; content: string }) => {
+    mutationFn: async ({ title, content, category }: { title: string; content: string; category: string }) => {
+      console.log('Creating message with:', { title, content, category, user });
+      
+      if (!user?.id) {
+        throw new Error('Usuário não autenticado');
+      }
+      
       const { data, error } = await supabase
         .from('messages')
         .insert([
           { 
             title, 
             content,
-            created_by: user?.id,
-            author_name: user?.name || 'Usuário', // Changed from user_metadata to directly access name
+            category,
+            author_id: user.id
           }
         ])
         .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating message:', error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: () => {
@@ -43,10 +55,12 @@ const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => 
       toast.success('Comunicado enviado com sucesso!');
       setTitle('');
       setContent('');
+      setCategory('geral');
       if (onMessageSuccess) onMessageSuccess();
     },
-    onError: () => {
-      toast.error('Erro ao enviar comunicado. Tente novamente.');
+    onError: (error) => {
+      console.error('Error creating message:', error);
+      toast.error(`Erro ao enviar comunicado: ${(error as Error).message}`);
     }
   });
   
@@ -63,7 +77,7 @@ const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => 
       return;
     }
     
-    createMessage({ title, content });
+    createMessage({ title, content, category });
   };
   
   return (
@@ -82,6 +96,26 @@ const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => 
               placeholder="Digite o título do comunicado"
               disabled={isPending}
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoria</Label>
+            <Select 
+              value={category} 
+              onValueChange={setCategory}
+              disabled={isPending}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="geral">Geral</SelectItem>
+                <SelectItem value="aviso">Aviso</SelectItem>
+                <SelectItem value="evento">Evento</SelectItem>
+                <SelectItem value="reunião">Reunião</SelectItem>
+                <SelectItem value="segurança">Segurança</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">

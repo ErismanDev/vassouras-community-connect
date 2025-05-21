@@ -28,33 +28,44 @@ const CategoryColors: Record<string, string> = {
 
 const MessagesFeed: React.FC = () => {
   const fetchMessages = async () => {
-    const { data, error } = await supabase
-      .from('messages')
-      .select(`
-        id,
-        title,
-        content,
-        category,
-        created_at,
-        author_id,
-        author:author_id (
-          email,
-          user_metadata->name
-        )
-      `)
-      .order('created_at', { ascending: false });
+    console.log('Fetching messages...');
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          title,
+          content,
+          category,
+          created_at,
+          author_id,
+          author:users(id, email, raw_user_meta_data)
+        `)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      throw new Error(error.message);
+      if (error) {
+        console.error('Error fetching messages:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('Messages fetched:', data);
+      return data.map((message: any) => {
+        const authorName = message.author?.raw_user_meta_data?.name || 
+                         message.author?.email?.split('@')[0] || 
+                         'Usuário';
+                         
+        return {
+          ...message,
+          author: {
+            name: authorName,
+            email: message.author?.email || '',
+          },
+        };
+      });
+    } catch (err) {
+      console.error('Error in fetchMessages function:', err);
+      throw err;
     }
-    
-    return data.map((message: any) => ({
-      ...message,
-      author: {
-        name: message.author?.user_metadata?.name || message.author?.email?.split('@')[0] || 'Usuário',
-        email: message.author?.email || '',
-      },
-    }));
   };
 
   const { data: messages, isLoading, error } = useQuery({
@@ -72,9 +83,11 @@ const MessagesFeed: React.FC = () => {
   }
 
   if (error) {
+    console.error('Error in messages query:', error);
     return (
       <div className="bg-red-50 p-4 rounded-md text-red-700 mb-4">
         <p>Erro ao carregar comunicados. Tente novamente mais tarde.</p>
+        <p className="text-sm mt-1">{(error as Error).message}</p>
       </div>
     );
   }

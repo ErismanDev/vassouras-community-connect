@@ -28,6 +28,14 @@ export const useBatchFeeGeneration = () => {
       generateAllMonths?: boolean;
       customAmount?: number;
     }) => {
+      console.log('Generating fees with params:', { 
+        referenceMonth, 
+        dueDate, 
+        description, 
+        generateAllMonths, 
+        customAmount 
+      });
+      
       // If generating all 12 months
       if (generateAllMonths) {
         let totalInsertedCount = 0;
@@ -43,22 +51,36 @@ export const useBatchFeeGeneration = () => {
           const refMonthStr = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
           const dueDateStr = format(currentDueDate, 'yyyy-MM-dd');
           
-          const { data, error } = await supabase.rpc('generate_monthly_fees_batch', {
-            p_reference_month: refMonthStr,
-            p_due_date: dueDateStr,
-            p_description: description || null,
-            p_custom_amount: customAmount || null
+          console.log(`Generating fees for month ${i+1}:`, {
+            month: refMonthStr,
+            dueDate: dueDateStr,
+            description,
+            customAmount
           });
           
-          if (error) {
-            console.error(`Error generating monthly fees for month ${i+1}:`, error);
-            throw new Error(error.message || 'Falha ao gerar as mensalidades');
-          }
-          
-          if (data && data.length > 0) {
-            totalInsertedCount += data[0]?.inserted_count || 0;
-            totalAmount += data[0]?.total_amount || 0;
-            results.push(data[0]);
+          try {
+            const { data, error } = await supabase.rpc('generate_monthly_fees_batch', {
+              p_reference_month: refMonthStr,
+              p_due_date: dueDateStr,
+              p_description: description || null,
+              p_custom_amount: customAmount || null
+            });
+            
+            console.log(`Month ${i+1} generation result:`, { data, error });
+            
+            if (error) {
+              console.error(`Error generating monthly fees for month ${i+1}:`, error);
+              throw new Error(error.message || 'Falha ao gerar as mensalidades');
+            }
+            
+            if (data && data.length > 0) {
+              totalInsertedCount += data[0]?.inserted_count || 0;
+              totalAmount += data[0]?.total_amount || 0;
+              results.push(data[0]);
+            }
+          } catch (err) {
+            console.error(`Error generating fees for month ${i+1}:`, err);
+            throw err;
           }
         }
         
@@ -72,23 +94,37 @@ export const useBatchFeeGeneration = () => {
       
       // Single month generation (original behavior)
       else {
-        // Format dates to ISO string (YYYY-MM-DD)
-        const refMonthStr = format(startOfMonth(referenceMonth), 'yyyy-MM-dd');
-        const dueDateStr = format(dueDate, 'yyyy-MM-dd');
-        
-        const { data, error } = await supabase.rpc('generate_monthly_fees_batch', {
-          p_reference_month: refMonthStr,
-          p_due_date: dueDateStr,
-          p_description: description || null,
-          p_custom_amount: customAmount || null
-        });
-        
-        if (error) {
-          console.error('Error generating monthly fees:', error);
-          throw new Error(error.message || 'Falha ao gerar as mensalidades');
+        try {
+          // Format dates to ISO string (YYYY-MM-DD)
+          const refMonthStr = format(startOfMonth(referenceMonth), 'yyyy-MM-dd');
+          const dueDateStr = format(dueDate, 'yyyy-MM-dd');
+          
+          console.log('Generating single month fees:', {
+            month: refMonthStr,
+            dueDate: dueDateStr,
+            description,
+            customAmount
+          });
+          
+          const { data, error } = await supabase.rpc('generate_monthly_fees_batch', {
+            p_reference_month: refMonthStr,
+            p_due_date: dueDateStr,
+            p_description: description || null,
+            p_custom_amount: customAmount || null
+          });
+          
+          console.log('Single month generation result:', { data, error });
+          
+          if (error) {
+            console.error('Error generating monthly fees:', error);
+            throw new Error(error.message || 'Falha ao gerar as mensalidades');
+          }
+          
+          return data;
+        } catch (err) {
+          console.error('Error generating fees:', err);
+          throw err;
         }
-        
-        return data;
       }
     },
     onSuccess: (data) => {
