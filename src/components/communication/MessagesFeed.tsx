@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 
@@ -12,6 +12,7 @@ interface Message {
   content: string;
   category: string;
   created_at: string;
+  author_id: string;
   author: {
     name: string;
     email: string;
@@ -30,6 +31,7 @@ const MessagesFeed: React.FC = () => {
   const fetchMessages = async () => {
     console.log('Fetching messages...');
     try {
+      // Simple query without complex joins first to troubleshoot
       const { data, error } = await supabase
         .from('messages')
         .select(`
@@ -38,8 +40,7 @@ const MessagesFeed: React.FC = () => {
           content,
           category,
           created_at,
-          author_id,
-          author:users(id, email, raw_user_meta_data)
+          author_id
         `)
         .order('created_at', { ascending: false });
 
@@ -49,19 +50,41 @@ const MessagesFeed: React.FC = () => {
       }
       
       console.log('Messages fetched:', data);
-      return data.map((message: any) => {
-        const authorName = message.author?.raw_user_meta_data?.name || 
-                         message.author?.email?.split('@')[0] || 
+      
+      // Now we need to fetch author details separately
+      // This is a workaround if the join above isn't working
+      const messagesWithAuthors = await Promise.all(
+        data.map(async (message) => {
+          // Try to get author info from auth.users via the get_user_role function
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id, email, raw_user_meta_data')
+            .eq('id', message.author_id)
+            .single();
+          
+          let authorName = 'Usuário';
+          let authorEmail = '';
+          
+          if (!userError && userData) {
+            authorName = userData.raw_user_meta_data?.name || 
+                         userData.email?.split('@')[0] || 
                          'Usuário';
-                         
-        return {
-          ...message,
-          author: {
-            name: authorName,
-            email: message.author?.email || '',
-          },
-        };
-      });
+            authorEmail = userData.email || '';
+          } else {
+            console.log('Could not fetch user details:', userError);
+          }
+          
+          return {
+            ...message,
+            author: {
+              name: authorName,
+              email: authorEmail,
+            },
+          };
+        })
+      );
+      
+      return messagesWithAuthors;
     } catch (err) {
       console.error('Error in fetchMessages function:', err);
       throw err;

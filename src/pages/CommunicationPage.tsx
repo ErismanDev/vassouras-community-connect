@@ -10,11 +10,11 @@ const CommunicationPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = React.useState('messages');
   
-  // We need to handle the success callback from NewMessageForm
   const handleMessageSuccess = () => {
     setActiveTab('messages');
   };
 
+  // Check if user has admin or director role
   const canCreateMessages = user?.role === 'admin' || user?.role === 'director';
 
   return (

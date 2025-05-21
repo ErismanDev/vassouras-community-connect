@@ -25,12 +25,13 @@ const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => 
   
   const { mutate: createMessage, isPending } = useMutation({
     mutationFn: async ({ title, content, category }: { title: string; content: string; category: string }) => {
-      console.log('Creating message with:', { title, content, category, user });
+      console.log('Creating message with:', { title, content, category });
       
       if (!user?.id) {
         throw new Error('Usuário não autenticado');
       }
       
+      // Create a new message with explicit target_role array to match the RLS policy
       const { data, error } = await supabase
         .from('messages')
         .insert([
@@ -38,7 +39,8 @@ const NewMessageForm: React.FC<NewMessageFormProps> = ({ onMessageSuccess }) => 
             title, 
             content,
             category,
-            author_id: user.id
+            author_id: user.id,
+            target_role: ['admin', 'director', 'resident'] // Default to all roles
           }
         ])
         .select();
