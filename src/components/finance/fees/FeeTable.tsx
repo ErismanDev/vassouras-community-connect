@@ -32,8 +32,6 @@ const FeeTable: React.FC<FeeTableProps> = ({
   selectAllPendingFees,
   clearSelection
 }) => {
-  const selectAllCheckboxRef = useRef<HTMLButtonElement>(null);
-
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
       style: 'currency',
@@ -72,12 +70,8 @@ const FeeTable: React.FC<FeeTableProps> = ({
   const allPendingSelected = pendingFees.length > 0 && pendingFees.every(fee => selectedFees.includes(fee.id));
   const somePendingSelected = pendingFees.some(fee => selectedFees.includes(fee.id));
 
-  // Set indeterminate state properly
-  useEffect(() => {
-    if (selectAllCheckboxRef.current) {
-      selectAllCheckboxRef.current.indeterminate = somePendingSelected && !allPendingSelected;
-    }
-  }, [somePendingSelected, allPendingSelected]);
+  // Calculate checkbox state
+  const selectAllCheckboxState = allPendingSelected ? true : (somePendingSelected ? 'indeterminate' : false);
 
   if (isLoading) {
     return (
@@ -94,8 +88,7 @@ const FeeTable: React.FC<FeeTableProps> = ({
         <TableRow>
           <TableHead className="w-[50px]">
             <Checkbox 
-              ref={selectAllCheckboxRef}
-              checked={allPendingSelected}
+              checked={selectAllCheckboxState}
               onCheckedChange={handleSelectAllToggle}
               title="Selecionar todas as mensalidades pendentes"
             />
