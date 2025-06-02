@@ -29,7 +29,8 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ isAdmin }) =>
     setNewTransaction,
     createTransactionMutation,
     handleExportCSV,
-    resetFilters
+    resetFilters,
+    handleCreateTransaction
   } = useTransactions();
   
   return (
@@ -70,7 +71,7 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ isAdmin }) =>
           onOpenChange={setIsDialogOpen}
           formData={newTransaction}
           setFormData={setNewTransaction}
-          onSubmit={() => createTransactionMutation.mutate(newTransaction)}
+          onSubmit={handleCreateTransaction}
           isPending={createTransactionMutation.isPending}
         />
       )}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MonthlyFee } from './useMonthlyFees';
@@ -32,6 +32,8 @@ const FeeTable: React.FC<FeeTableProps> = ({
   selectAllPendingFees,
   clearSelection
 }) => {
+  const selectAllCheckboxRef = useRef<HTMLButtonElement>(null);
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
       style: 'currency',
@@ -66,6 +68,17 @@ const FeeTable: React.FC<FeeTableProps> = ({
     }
   };
 
+  const pendingFees = monthlyFees?.filter(fee => fee.status === 'pending') || [];
+  const allPendingSelected = pendingFees.length > 0 && pendingFees.every(fee => selectedFees.includes(fee.id));
+  const somePendingSelected = pendingFees.some(fee => selectedFees.includes(fee.id));
+
+  // Set indeterminate state properly
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      selectAllCheckboxRef.current.indeterminate = somePendingSelected && !allPendingSelected;
+    }
+  }, [somePendingSelected, allPendingSelected]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -75,20 +88,14 @@ const FeeTable: React.FC<FeeTableProps> = ({
     );
   }
 
-  const pendingFees = monthlyFees?.filter(fee => fee.status === 'pending') || [];
-  const allPendingSelected = pendingFees.length > 0 && pendingFees.every(fee => selectedFees.includes(fee.id));
-  const somePendingSelected = pendingFees.some(fee => selectedFees.includes(fee.id));
-
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="w-[50px]">
             <Checkbox 
+              ref={selectAllCheckboxRef}
               checked={allPendingSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = somePendingSelected && !allPendingSelected;
-              }}
               onCheckedChange={handleSelectAllToggle}
               title="Selecionar todas as mensalidades pendentes"
             />
