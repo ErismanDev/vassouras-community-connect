@@ -40,100 +40,104 @@ export const useResidentForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const uploadFileToStorage = async (file: File, path: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `${path}/${fileName}`;
-    
-    const { data, error } = await supabase.storage
-      .from('resident-documents')
-      .upload(filePath, file);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `${path}/${fileName}`;
       
-    if (error) {
-      console.error('Erro ao fazer upload do arquivo:', error);
-      throw new Error(`Erro no upload: ${error.message}`);
+      const { data, error } = await supabase.storage
+        .from('resident-documents')
+        .upload(filePath, file);
+        
+      if (error) {
+        console.error('Erro ao fazer upload do arquivo:', error);
+        throw new Error(`Erro no upload: ${error.message}`);
+      }
+      
+      const { data: publicUrlData } = supabase.storage
+        .from('resident-documents')
+        .getPublicUrl(filePath);
+        
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
     }
-    
-    const { data: publicUrlData } = supabase.storage
-      .from('resident-documents')
-      .getPublicUrl(filePath);
-      
-    return publicUrlData.publicUrl;
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Validation
-    if (!name || !cpf || !rg || !birthDate || !phone || !email) {
-      toast.error('Preencha todos os campos pessoais obrigatórios.');
+    // Validação apenas para campos obrigatórios: nome e CPF
+    if (!name.trim()) {
+      toast.error('Nome é obrigatório.');
       setIsSubmitting(false);
       return;
     }
     
-    if (!street || !number || !neighborhood || !city || !state || !zipCode) {
-      toast.error('Preencha todos os campos de endereço obrigatórios.');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (!voterTitle || !zone || !section) {
-      toast.error('Preencha todos os dados eleitorais obrigatórios.');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (!documents.idDocument || !documents.proofOfResidence) {
-      toast.error('Upload de todos os documentos é obrigatório.');
+    if (!cpf.trim()) {
+      toast.error('CPF é obrigatório.');
       setIsSubmitting(false);
       return;
     }
     
     try {
-      // Upload dos documentos para o Storage
-      const idDocumentUrl = await uploadFileToStorage(
-        documents.idDocument.file, 
-        'identity-documents'
-      );
+      // Upload dos documentos para o Storage (apenas se fornecidos)
+      let idDocumentUrl = '';
+      let proofOfResidenceUrl = '';
       
-      const proofOfResidenceUrl = await uploadFileToStorage(
-        documents.proofOfResidence.file,
-        'proof-of-residence'
-      );
+      if (documents.idDocument) {
+        idDocumentUrl = await uploadFileToStorage(
+          documents.idDocument.file, 
+          'identity-documents'
+        );
+      }
+      
+      if (documents.proofOfResidence) {
+        proofOfResidenceUrl = await uploadFileToStorage(
+          documents.proofOfResidence.file,
+          'proof-of-residence'
+        );
+      }
       
       // Dados para inserção no banco
       const residentData = {
-        // Dados pessoais
-        name,
+        // Dados pessoais obrigatórios
+        name: name.trim(),
         cpf: cpf.replace(/\D/g, ''), // Remove formatação
-        rg,
-        birth_date: birthDate,
-        phone: phone.replace(/\D/g, ''), // Remove formatação
-        email,
         
-        // Endereço
-        street,
-        number,
-        complement,
-        neighborhood,
-        city,
-        state,
-        zip_code: zipCode.replace(/\D/g, ''), // Remove formatação
+        // Dados pessoais opcionais
+        rg: rg.trim() || '',
+        birth_date: birthDate || new Date().toISOString().split('T')[0],
+        phone: phone.replace(/\D/g, '') || '',
+        email: email.trim() || '',
         
-        // Dados eleitorais
-        voter_title: voterTitle,
-        electoral_zone: zone,
-        electoral_section: section,
+        // Endereço (opcional)
+        street: street.trim() || '',
+        number: number.trim() || '',
+        complement: complement.trim() || '',
+        neighborhood: neighborhood.trim() || '',
+        city: city.trim() || '',
+        state: state.trim() || '',
+        zip_code: zipCode.replace(/\D/g, '') || '',
         
-        // Documentos
+        // Dados eleitorais (opcional)
+        voter_title: voterTitle.trim() || '',
+        electoral_zone: zone.trim() || '',
+        electoral_section: section.trim() || '',
+        
+        // Documentos (opcional)
         id_document_url: idDocumentUrl,
         proof_of_residence_url: proofOfResidenceUrl,
         
         // Metadados
-        created_by: user?.id,
+        created_by: user?.id || null,
         created_at: new Date().toISOString(),
         status: 'active'
       };
+      
+      console.log('Inserindo dados do morador:', residentData);
       
       // Inserção no banco de dados
       const { data, error } = await supabase
@@ -146,11 +150,12 @@ export const useResidentForm = () => {
         throw new Error(`Erro ao salvar: ${error.message}`);
       }
       
+      console.log('Morador inserido com sucesso:', data);
       toast.success('Morador cadastrado com sucesso!');
       resetForm();
     } catch (error: any) {
-      toast.error(`Erro ao cadastrar morador: ${error.message}`);
       console.error('Form submission error:', error);
+      toast.error(`Erro ao cadastrar morador: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }

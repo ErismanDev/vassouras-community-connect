@@ -49,10 +49,20 @@ const ResidentForm: React.FC = () => {
   return (
     <Card className="shadow-md">
       <CardContent className="p-6">
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>Campos obrigatórios:</strong> Apenas Nome e CPF são obrigatórios para o cadastro inicial. 
+            Os demais campos podem ser preenchidos posteriormente.
+          </p>
+        </div>
+        
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
+              <TabsTrigger value="personal">
+                Dados Pessoais
+                <span className="ml-1 text-red-500">*</span>
+              </TabsTrigger>
               <TabsTrigger value="address">Endereço</TabsTrigger>
               <TabsTrigger value="electoral">Dados Eleitorais</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
@@ -72,6 +82,9 @@ const ResidentForm: React.FC = () => {
             
             {/* Address Tab */}
             <TabsContent value="address" className="space-y-4 pt-4">
+              <div className="mb-2 text-sm text-gray-600">
+                Todos os campos de endereço são opcionais
+              </div>
               <AddressForm 
                 street={street} setStreet={setStreet}
                 number={number} setNumber={setNumber}
@@ -85,6 +98,9 @@ const ResidentForm: React.FC = () => {
             
             {/* Electoral Data Tab */}
             <TabsContent value="electoral" className="space-y-4 pt-4">
+              <div className="mb-2 text-sm text-gray-600">
+                Todos os campos eleitorais são opcionais
+              </div>
               <ElectoralDataForm 
                 voterTitle={voterTitle} setVoterTitle={setVoterTitle}
                 zone={zone} setZone={setZone}
@@ -94,6 +110,9 @@ const ResidentForm: React.FC = () => {
             
             {/* Documents Tab */}
             <TabsContent value="documents" className="space-y-4 pt-4">
+              <div className="mb-2 text-sm text-gray-600">
+                O upload de documentos é opcional
+              </div>
               <DocumentUploader 
                 documents={documents}
                 setDocuments={setDocuments}
