@@ -98,7 +98,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     label: string,
     description: string
   ) => {
-    const document = documents[documentType];
+    const documentPreview = documents[documentType];
     const isDragOver = dragOver === documentType;
 
     return (
@@ -107,14 +107,14 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
           <Label className="text-sm font-medium mb-2 block">{label}</Label>
           <p className="text-xs text-gray-500 mb-3">{description}</p>
 
-          {document ? (
+          {documentPreview ? (
             <div className="border rounded-lg p-3 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  {document.preview ? (
+                  {documentPreview.preview ? (
                     <img
-                      src={document.preview}
-                      alt={document.name}
+                      src={documentPreview.preview}
+                      alt={documentPreview.name}
                       className="w-12 h-12 object-cover rounded border"
                     />
                   ) : (
@@ -123,9 +123,9 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{document.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{documentPreview.name}</p>
                     <p className="text-xs text-gray-500">
-                      {(document.file.size / 1024 / 1024).toFixed(2)} MB
+                      {(documentPreview.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 </div>
@@ -166,7 +166,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => document.getElementById(`file-${documentType}`)?.click()}
+                onClick={() => window.document.getElementById(`file-${documentType}`)?.click()}
               >
                 Selecionar Arquivo
               </Button>
