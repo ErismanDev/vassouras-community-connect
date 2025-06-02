@@ -5,6 +5,7 @@ import TransactionsSection from '@/components/finance/TransactionsSection';
 import MonthlyFeesSection from '@/components/finance/MonthlyFeesSection';
 import FeeConfigurationSection from '@/components/finance/FeeConfigurationSection';
 import FinancialReportsSection from '@/components/finance/FinancialReportsSection';
+import PaymentMethodsSection from '@/components/finance/fees/PaymentMethodsSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -69,6 +70,7 @@ const FinancePage: React.FC = () => {
             <TabsTrigger value="config">Configuração</TabsTrigger>
           )}
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsTrigger value="payments">Formas de Pagamento</TabsTrigger>
         </TabsList>
         
         <TabsContent value="transactions" className="relative z-10">
@@ -89,6 +91,10 @@ const FinancePage: React.FC = () => {
         
         <TabsContent value="reports" className="relative z-10">
           <FinancialReportsSection isAdmin={isAdminOrDirector || false} />
+        </TabsContent>
+
+        <TabsContent value="payments" className="relative z-10">
+          <PaymentMethodsSection />
         </TabsContent>
       </Tabs>
     </div>

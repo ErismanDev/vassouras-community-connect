@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, startOfMonth, addMonths } from 'date-fns'; // Add missing imports
+import { format, startOfMonth, addMonths } from 'date-fns';
 import { useBatchFeeGeneration } from './useBatchFeeGeneration';
 
 export interface MonthlyFee {
@@ -32,11 +32,13 @@ export const useMonthlyFees = () => {
   const { data: monthlyFees, isLoading } = useQuery({
     queryKey: ['monthlyFees', selectedMonth, selectedStatus],
     queryFn: async () => {
+      console.log('Fetching monthly fees...');
+      
       let query = supabase.from('monthly_fees').select(`
         *,
-        users:user_id (
-          name,
-          email
+        users:user_id!inner (
+          email,
+          raw_user_meta_data
         )
       `);
       
@@ -52,11 +54,19 @@ export const useMonthlyFees = () => {
       
       const { data, error } = await query.order('due_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching monthly fees:', error);
+        throw error;
+      }
       
+      console.log('Monthly fees fetched:', data);
+      
+      // Transform data to include user names
       return data.map((fee: any) => ({
         ...fee,
-        user_name: fee.users ? fee.users.name : 'Desconhecido'
+        user_name: fee.users?.raw_user_meta_data?.name || 
+                  fee.users?.email?.split('@')[0] || 
+                  'Usuário Desconhecido'
       })) as MonthlyFee[];
     }
   });
@@ -81,28 +91,42 @@ export const useMonthlyFees = () => {
   const { data: residents } = useQuery({
     queryKey: ['residents'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, name, email')
-        .order('name', { ascending: true });
+      // Try to get users from auth.users table via a function call or direct query
+      const { data, error } = await supabase.auth.admin.listUsers();
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching users:', error);
+        // Fallback to getting count from a simpler query
+        return [];
+      }
+      
+      return data.users.map(user => ({
+        id: user.id,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+        email: user.email || ''
+      }));
     }
   });
   
   // Mark fees as paid mutation
   const markFeesAsPaidMutation = useMutation({
     mutationFn: async (data: { feeIds: string[]; paymentDate: Date }) => {
+      console.log('Marking fees as paid:', data);
+      
       const { data: responseData, error } = await supabase
         .from('monthly_fees')
         .update({
           status: 'paid',
           payment_date: format(data.paymentDate, 'yyyy-MM-dd')
         })
-        .in('id', data.feeIds);
+        .in('id', data.feeIds)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking fees as paid:', error);
+        throw error;
+      }
+      
       return responseData;
     },
     onSuccess: () => {
@@ -110,6 +134,10 @@ export const useMonthlyFees = () => {
       setIsMarkPaidDialogOpen(false);
       setSelectedFees([]);
       toast.success('Pagamentos registrados com sucesso!');
+    },
+    onError: (error) => {
+      console.error('Error in markFeesAsPaidMutation:', error);
+      toast.error('Erro ao registrar pagamentos: ' + error.message);
     }
   });
   

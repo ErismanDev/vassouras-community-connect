@@ -13,6 +13,7 @@ import FeeHistoryTable from './fees/FeeHistoryTable';
 import FeeReceiptBook from './fees/FeeReceiptBook';
 import BatchFeeDialog from './fees/BatchFeeDialog';
 import MarkAsPaidDialog from './fees/MarkAsPaidDialog';
+import IndividualFeeForm from './fees/IndividualFeeForm';
 import FeeDashboard from './fees/FeeDashboard';
 import { ptBR } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -59,6 +60,7 @@ const MonthlyFeesSection: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState('dashboard');
   const [printMode, setPrintMode] = useState(false);
+  const [isIndividualDialogOpen, setIsIndividualDialogOpen] = useState(false);
   
   const handleMarkAsPaid = () => {
     if (selectedFees.length === 0) {
@@ -74,6 +76,10 @@ const MonthlyFeesSection: React.FC = () => {
   
   const openBatchDialog = () => {
     setIsBatchDialogOpen(true);
+  };
+
+  const openIndividualDialog = () => {
+    setIsIndividualDialogOpen(true);
   };
   
   // Prepare receipt data
@@ -141,6 +147,8 @@ const MonthlyFeesSection: React.FC = () => {
             openBatchDialog={openBatchDialog}
             selectedStatus={selectedStatus}
             isBatchLoading={isBatchLoading}
+            openIndividualDialog={openIndividualDialog}
+            selectAllPendingFees={selectAllPendingFees}
           />
           
           <FeeTable
@@ -148,6 +156,8 @@ const MonthlyFeesSection: React.FC = () => {
             monthlyFees={monthlyFees}
             selectedFees={selectedFees}
             toggleFeeSelection={toggleFeeSelection}
+            selectAllPendingFees={selectAllPendingFees}
+            clearSelection={clearSelection}
           />
         </TabsContent>
         
@@ -203,6 +213,11 @@ const MonthlyFeesSection: React.FC = () => {
         setPaymentDate={setPaymentDate}
         onMarkAsPaid={handleMarkAsPaid}
         isLoading={markFeesAsPaidMutation.isPending}
+      />
+
+      <IndividualFeeForm
+        isOpen={isIndividualDialogOpen}
+        onOpenChange={setIsIndividualDialogOpen}
       />
     </div>
   );

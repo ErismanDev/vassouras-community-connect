@@ -3,11 +3,12 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Trash, 
-  CreditCard, 
   CheckSquare, 
   FileText, 
   Plus, 
-  Loader2 
+  Loader2,
+  UserPlus,
+  Users
 } from 'lucide-react';
 
 interface FeeActionsBarProps {
@@ -17,6 +18,8 @@ interface FeeActionsBarProps {
   openBatchDialog: () => void;
   selectedStatus: string;
   isBatchLoading: boolean;
+  openIndividualDialog?: () => void;
+  selectAllPendingFees?: () => void;
 }
 
 const FeeActionsBar: React.FC<FeeActionsBarProps> = ({
@@ -25,7 +28,9 @@ const FeeActionsBar: React.FC<FeeActionsBarProps> = ({
   setIsMarkPaidDialogOpen,
   openBatchDialog,
   selectedStatus,
-  isBatchLoading
+  isBatchLoading,
+  openIndividualDialog,
+  selectAllPendingFees
 }) => {
   const hasSelectedFees = selectedFees.length > 0;
   
@@ -40,10 +45,32 @@ const FeeActionsBar: React.FC<FeeActionsBarProps> = ({
           {isBatchLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Plus className="h-4 w-4" />
+            <Users className="h-4 w-4" />
           )}
-          Gerar Mensalidades
+          Gerar em Lote
         </Button>
+        
+        {openIndividualDialog && (
+          <Button 
+            variant="outline"
+            onClick={openIndividualDialog}
+            className="flex items-center gap-1"
+          >
+            <UserPlus className="h-4 w-4" />
+            Criar Individual
+          </Button>
+        )}
+        
+        {selectAllPendingFees && (
+          <Button 
+            variant="outline"
+            onClick={selectAllPendingFees}
+            className="flex items-center gap-1"
+          >
+            <CheckSquare className="h-4 w-4" />
+            Selecionar Pendentes
+          </Button>
+        )}
         
         {hasSelectedFees && (
           <>
@@ -53,7 +80,7 @@ const FeeActionsBar: React.FC<FeeActionsBarProps> = ({
               className="flex items-center gap-1"
             >
               <CheckSquare className="h-4 w-4" />
-              Marcar como Pagas
+              Dar Baixa ({selectedFees.length})
             </Button>
             
             <Button

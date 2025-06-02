@@ -20,13 +20,17 @@ interface FeeTableProps {
   monthlyFees: MonthlyFee[] | undefined;
   selectedFees: string[];
   toggleFeeSelection: (feeId: string) => void;
+  selectAllPendingFees?: () => void;
+  clearSelection?: () => void;
 }
 
 const FeeTable: React.FC<FeeTableProps> = ({
   isLoading,
   monthlyFees,
   selectedFees,
-  toggleFeeSelection
+  toggleFeeSelection,
+  selectAllPendingFees,
+  clearSelection
 }) => {
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
@@ -48,6 +52,20 @@ const FeeTable: React.FC<FeeTableProps> = ({
     }
   };
 
+  // Handle select all/none toggle
+  const handleSelectAllToggle = () => {
+    if (!monthlyFees) return;
+    
+    const pendingFees = monthlyFees.filter(fee => fee.status === 'pending');
+    const allPendingSelected = pendingFees.every(fee => selectedFees.includes(fee.id));
+    
+    if (allPendingSelected) {
+      clearSelection?.();
+    } else {
+      selectAllPendingFees?.();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -57,12 +75,23 @@ const FeeTable: React.FC<FeeTableProps> = ({
     );
   }
 
+  const pendingFees = monthlyFees?.filter(fee => fee.status === 'pending') || [];
+  const allPendingSelected = pendingFees.length > 0 && pendingFees.every(fee => selectedFees.includes(fee.id));
+  const somePendingSelected = pendingFees.some(fee => selectedFees.includes(fee.id));
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="w-[50px]">
-            <Checkbox />
+            <Checkbox 
+              checked={allPendingSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = somePendingSelected && !allPendingSelected;
+              }}
+              onCheckedChange={handleSelectAllToggle}
+              title="Selecionar todas as mensalidades pendentes"
+            />
           </TableHead>
           <TableHead>Morador</TableHead>
           <TableHead>Mês de Referência</TableHead>
@@ -86,6 +115,7 @@ const FeeTable: React.FC<FeeTableProps> = ({
                 <Checkbox
                   checked={selectedFees.includes(fee.id)}
                   onCheckedChange={() => toggleFeeSelection(fee.id)}
+                  disabled={fee.status === 'paid'}
                 />
               </TableCell>
               <TableCell className="font-medium">{fee.user_name || 'Desconhecido'}</TableCell>
